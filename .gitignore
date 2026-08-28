@@ -1,0 +1,38 @@
+# Claude Code local settings
+.claude/settings.local.json
+
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.turbo/
+*.tsbuildinfo
+
+# Env files
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# Prisma
+packages/db/generated/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+.vscode/*
+!.vscode/extensions.json
+.idea/
+
+# Testing
+coverage/
+
+# PWA generated
+apps/web/dev-dist/

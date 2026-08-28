@@ -1,0 +1,435 @@
+// Trade Platform — core domain schema.
+//
+// INVARIANT: every tenant-owned model carries a non-nullable `accountId` column,
+// even where it could be reached transitively via a parent relation (e.g.
+// InvoiceLineItem -> Invoice -> Account). This is deliberate: it keeps every
+// Row-Level Security policy uniform (`account_id = current_setting(...)`) and
+// keeps every query filterable without a join. See apps/api/src/middleware
+// for how `accountId` is attached to a request and set for RLS.
+//
+// RLS policies themselves are NOT expressed here (Prisma doesn't model them) —
+// they live in hand-written SQL in a migration file, see prisma/migrations/.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Tenant + identity
+// ---------------------------------------------------------------------------
+
+/// The tenant boundary. Named `Account` rather than `User` so a future
+/// multi-user `AccountMember` join table can be added without renaming every
+/// foreign key in the schema. v1 is strictly one human per Account.
+model Account {
+  id             String   @id @default(uuid())
+  authProviderId String   @unique @map("auth_provider_id") // Clerk user id
+
+  businessName String  @map("business_name")
+  contactEmail String  @map("contact_email")
+  contactPhone String? @map("contact_phone")
+
+  addressLine1 String? @map("address_line1")
+  addressLine2 String? @map("address_line2")
+  city         String?
+  postcode     String?
+  country      String?
+
+  logoUrl String? @map("logo_url")
+
+  // Bank details are display-only (printed on invoice PDFs). No payment
+  // processing is performed against these — see brief §6.3 (deferred).
+  bankAccountName   String? @map("bank_account_name")
+  bankSortCode      String? @map("bank_sort_code")
+  bankAccountNumber String? @map("bank_account_number")
+
+  vatNumber           String? @map("vat_number")
+  defaultTaxRate      Decimal @default(0) @map("default_tax_rate") @db.Decimal(5, 4)
+  invoiceNumberPrefix String  @default("INV-") @map("invoice_number_prefix")
+  invoiceNumberSeq    Int     @default(0) @map("invoice_number_seq")
+  currency            String  @default("GBP")
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  customers    Customer[]
+  jobs         Job[]
+  invoices     Invoice[]
+  lineItems    InvoiceLineItem[]
+  statusEvents InvoiceStatusEvent[]
+  emailEvents  EmailEvent[]
+  materials    JobMaterial[]
+  attachments  Attachment[]
+  jobNotes     JobNote[]
+  backgroundJobs BackgroundJob[]
+
+  @@map("accounts")
+}
+
+/// Internal support/ops staff. Deliberately NOT a role flag on Account —
+/// a fully separate identity table so a bug can never flip a tenant into an
+/// admin. See brief §5.
+model Admin {
+  id             String    @id @default(uuid())
+  authProviderId String    @unique @map("auth_provider_id")
+  email          String    @unique
+  role           AdminRole @default(SUPPORT)
+
+  createdAt   DateTime  @default(now()) @map("created_at")
+  lastLoginAt DateTime? @map("last_login_at")
+
+  auditLogs AdminAuditLog[]
+
+  @@map("admins")
+}
+
+enum AdminRole {
+  SUPPORT
+  BILLING_OPS
+  SUPERADMIN
+}
+
+/// Every admin action against tenant data. Written on every impersonation
+/// grant, support metadata view, or resend action — the audit trail that
+/// makes the "admins can't normally see tenant content" guarantee credible.
+model AdminAuditLog {
+  id             String   @id @default(uuid())
+  adminId        String   @map("admin_id")
+  action         String
+  targetAccountId String? @map("target_account_id")
+  metadata       Json?
+  createdAt      DateTime @default(now()) @map("created_at")
+
+  admin Admin @relation(fields: [adminId], references: [id])
+
+  @@index([targetAccountId])
+  @@map("admin_audit_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Customers & jobs
+// ---------------------------------------------------------------------------
+
+model Customer {
+  id        String @id @default(uuid())
+  accountId String @map("account_id")
+
+  name  String
+  email String?
+  phone String?
+
+  addressLine1 String? @map("address_line1")
+  addressLine2 String? @map("address_line2")
+  city         String?
+  postcode     String?
+  country      String?
+
+  notes String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  account  Account   @relation(fields: [accountId], references: [id])
+  jobs     Job[]
+  invoices Invoice[]
+
+  @@index([accountId])
+  @@map("customers")
+}
+
+enum JobStatus {
+  QUOTED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETE
+  CANCELLED
+}
+
+model Job {
+  id         String @id @default(uuid())
+  accountId  String @map("account_id")
+  customerId String @map("customer_id")
+
+  title       String
+  description String?
+  status      JobStatus @default(QUOTED)
+
+  scheduledStart DateTime? @map("scheduled_start")
+  scheduledEnd   DateTime? @map("scheduled_end")
+  completedAt    DateTime? @map("completed_at")
+
+  // Job-site address — may differ from the customer's billing address.
+  addressLine1 String? @map("address_line1")
+  addressLine2 String? @map("address_line2")
+  city         String?
+  postcode     String?
+
+  notes String?
+
+  createdAt DateTime  @default(now()) @map("created_at")
+  updatedAt DateTime  @updatedAt @map("updated_at")
+  deletedAt DateTime? @map("deleted_at")
+
+  account     Account       @relation(fields: [accountId], references: [id])
+  customer    Customer      @relation(fields: [customerId], references: [id])
+  materials   JobMaterial[]
+  attachments Attachment[]
+  jobNotes    JobNote[]
+  invoices    Invoice[]
+
+  @@index([accountId])
+  @@index([accountId, status])
+  @@map("jobs")
+}
+
+model JobNote {
+  id        String @id @default(uuid())
+  jobId     String @map("job_id")
+  accountId String @map("account_id")
+
+  body String
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  job     Job     @relation(fields: [jobId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([jobId])
+  @@map("job_notes")
+}
+
+/// Cost line feeding into an invoice's pre-filled line items.
+model JobMaterial {
+  id        String @id @default(uuid())
+  jobId     String @map("job_id")
+  accountId String @map("account_id")
+
+  description String
+  quantity    Decimal @db.Decimal(10, 2)
+  unitCost    Decimal @map("unit_cost") @db.Decimal(10, 2)
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  job     Job     @relation(fields: [jobId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([jobId])
+  @@map("job_materials")
+}
+
+model Attachment {
+  id        String @id @default(uuid())
+  jobId     String @map("job_id")
+  accountId String @map("account_id")
+
+  fileUrl       String @map("file_url") // S3/R2 object key
+  fileType      String @map("file_type")
+  fileSizeBytes Int    @map("file_size_bytes")
+
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  job     Job     @relation(fields: [jobId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([jobId])
+  @@map("attachments")
+}
+
+// ---------------------------------------------------------------------------
+// Invoicing
+// ---------------------------------------------------------------------------
+
+/// `status` tracks customer engagement; `overdue` is a separate derived flag
+/// tracking whether action is needed. Keeping these on two axes (rather than
+/// one combined enum) avoids the trap of representing "sent AND overdue" or
+/// "viewed AND overdue" as a single state. See brief §4.
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PAID
+  VOID
+}
+
+model Invoice {
+  id         String  @id @default(uuid())
+  accountId  String  @map("account_id")
+  jobId      String  @map("job_id") // one-to-many Job -> Invoice; no unique constraint (see brief §3.4)
+  customerId String  @map("customer_id") // denormalized for query convenience
+
+  invoiceNumber String        @map("invoice_number")
+  status        InvoiceStatus @default(DRAFT)
+  overdue       Boolean       @default(false)
+
+  issueDate DateTime? @map("issue_date") @db.Date
+  dueDate   DateTime? @map("due_date") @db.Date
+
+  subtotal   Decimal @db.Decimal(10, 2)
+  taxRate    Decimal @map("tax_rate") @db.Decimal(5, 4)
+  taxAmount  Decimal @map("tax_amount") @db.Decimal(10, 2)
+  total      Decimal @db.Decimal(10, 2)
+  amountPaid Decimal @default(0) @map("amount_paid") @db.Decimal(10, 2)
+
+  paidAt     DateTime? @map("paid_at")
+  paidMethod String?   @map("paid_method") // free text, e.g. "bank transfer" — no payment processor
+
+  notesToCustomer String? @map("notes_to_customer")
+  pdfUrl          String? @map("pdf_url")
+
+  sentAt         DateTime? @map("sent_at")
+  firstViewedAt  DateTime? @map("first_viewed_at")
+  voidedAt       DateTime? @map("voided_at")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  account      Account              @relation(fields: [accountId], references: [id])
+  job          Job                  @relation(fields: [jobId], references: [id])
+  customer     Customer             @relation(fields: [customerId], references: [id])
+  lineItems    InvoiceLineItem[]
+  statusEvents InvoiceStatusEvent[]
+  emailEvents  EmailEvent[]
+
+  @@unique([accountId, invoiceNumber])
+  @@index([accountId, status])
+  @@index([accountId, overdue])
+  @@index([jobId])
+  @@map("invoices")
+}
+
+enum LineItemType {
+  LABOUR
+  MATERIALS
+  OTHER
+}
+
+model InvoiceLineItem {
+  id        String @id @default(uuid())
+  invoiceId String @map("invoice_id")
+  accountId String @map("account_id") // denormalized for RLS uniformity, see file header
+
+  description String
+  type        LineItemType
+  quantity    Decimal      @default(1) @db.Decimal(10, 2)
+  unitPrice   Decimal      @map("unit_price") @db.Decimal(10, 2)
+  lineTotal   Decimal      @map("line_total") @db.Decimal(10, 2) // stored, not recomputed later
+  sortOrder   Int          @map("sort_order")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([invoiceId])
+  @@map("invoice_line_items")
+}
+
+enum TriggerSource {
+  MANUAL_USER
+  EMAIL_WEBHOOK
+  SCHEDULED_JOB
+  ADMIN
+}
+
+/// Append-only audit trail. Never update Invoice.status without writing one
+/// of these in the same transaction — see packages/invoice-engine.
+model InvoiceStatusEvent {
+  id         String         @id @default(uuid())
+  invoiceId  String         @map("invoice_id")
+  accountId  String         @map("account_id")
+  fromStatus InvoiceStatus? @map("from_status")
+  toStatus   InvoiceStatus  @map("to_status")
+  triggeredBy TriggerSource @map("triggered_by")
+  actorId    String?        @map("actor_id") // accountId or admin id; null for system-triggered
+  metadata   Json?
+  createdAt  DateTime       @default(now()) @map("created_at")
+
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+  account Account @relation(fields: [accountId], references: [id])
+
+  @@index([accountId])
+  @@index([invoiceId])
+  @@map("invoice_status_events")
+}
+
+enum EmailEventType {
+  SENT
+  DELIVERED
+  OPENED
+  BOUNCED
+  SPAM_COMPLAINT
+}
+
+/// One row per inbound Postmark webhook event. `providerMessageId` is the
+/// correlation key used to resolve which invoice/account a webhook belongs
+/// to. Idempotency: dedupe on (providerMessageId, eventType, occurredAt) at
+/// the webhook handler — see apps/api/src/modules/email/webhooks.ts.
+model EmailEvent {
+  id                String         @id @default(uuid())
+  accountId         String         @map("account_id")
+  invoiceId         String         @map("invoice_id")
+  providerMessageId String         @map("provider_message_id")
+  eventType         EmailEventType @map("event_type")
+  recipientEmail    String         @map("recipient_email")
+  occurredAt        DateTime       @map("occurred_at")
+  rawPayload        Json?          @map("raw_payload")
+  createdAt         DateTime       @default(now()) @map("created_at")
+
+  account Account @relation(fields: [accountId], references: [id])
+  invoice Invoice @relation(fields: [invoiceId], references: [id])
+
+  @@index([accountId])
+  @@index([invoiceId])
+  @@index([providerMessageId])
+  @@map("email_events")
+}
+
+// ---------------------------------------------------------------------------
+// Background jobs
+// ---------------------------------------------------------------------------
+
+enum BackgroundJobType {
+  SEND_INVOICE_EMAIL
+  DETECT_OVERDUE
+  SEND_REMINDER
+}
+
+enum BackgroundJobStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+/// Simple Postgres-backed job queue for MVP volume — polled via
+/// `SELECT ... FOR UPDATE SKIP LOCKED` by apps/api/src/jobs-runner. See
+/// brief §10 for the explicit upgrade trigger to BullMQ/Redis.
+model BackgroundJob {
+  id          String              @id @default(uuid())
+  accountId   String?             @map("account_id") // nullable: scheduled sweeps aren't account-scoped
+  type        BackgroundJobType
+  payload     Json
+  status      BackgroundJobStatus @default(PENDING)
+  attempts    Int                 @default(0)
+  maxAttempts Int                 @default(5) @map("max_attempts")
+  runAfter    DateTime            @default(now()) @map("run_after")
+  lastError   String?             @map("last_error")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  account Account? @relation(fields: [accountId], references: [id])
+
+  @@index([status, runAfter])
+  @@map("background_jobs")
+}
