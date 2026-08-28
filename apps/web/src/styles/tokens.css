@@ -1,0 +1,204 @@
+/* Design tokens — mirrors design/Styleguide.dc.html exactly. Any palette or
+   type change should be made there first (it's the published reference:
+   see the "Trade Platform Design System" artifact) and then copied here. */
+:root {
+  --bg: oklch(97.3% 0.008 75);
+  --surface: oklch(99% 0.003 80);
+  --surface-alt: oklch(95.3% 0.01 75);
+  --border: oklch(88.5% 0.013 70);
+  --border-soft: oklch(92.5% 0.01 72);
+  --text: oklch(24% 0.02 50);
+  --text-muted: oklch(46% 0.02 55);
+  --text-faint: oklch(63% 0.014 60);
+
+  --sidebar-bg: oklch(21% 0.017 50);
+  --sidebar-text: oklch(83% 0.012 60);
+  --sidebar-text-muted: oklch(58% 0.02 55);
+  --sidebar-active-bg: oklch(31% 0.035 46);
+
+  --accent: oklch(62% 0.16 45);
+  --accent-hover: oklch(55% 0.17 42);
+  --accent-soft: oklch(93% 0.035 55);
+  --accent-soft-text: oklch(40% 0.12 40);
+  --on-accent: oklch(99% 0.006 70);
+
+  --green-bg: oklch(93% 0.05 145); --green-text: oklch(40% 0.13 145);
+  --blue-bg: oklch(93% 0.03 250); --blue-text: oklch(45% 0.12 250);
+  --teal-bg: oklch(92% 0.035 200); --teal-text: oklch(42% 0.11 200);
+  --red-bg: oklch(93% 0.05 25); --red-text: oklch(46% 0.16 25);
+  --gray-bg: oklch(92% 0.006 70); --gray-text: oklch(48% 0.01 60);
+
+  --shadow-sm: 0 1px 2px oklch(20% 0.02 50 / 0.06);
+  --shadow-md: 0 4px 14px oklch(20% 0.02 50 / 0.08);
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Public Sans", system-ui, -apple-system, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--accent-hover);
+}
+
+button {
+  font-family: var(--font-body);
+  cursor: pointer;
+}
+
+/* Shared component classes — kept as plain CSS (not CSS modules) to match
+   the design canvas 1:1 and keep the component files easy to diff against
+   design/*.dc.html. */
+
+.navlink {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 9px 12px;
+  border-radius: var(--radius-md);
+  color: var(--sidebar-text);
+  font-size: 13.5px;
+  font-weight: 500;
+}
+.navlink.active {
+  background: var(--sidebar-active-bg);
+  color: oklch(97% 0.01 60);
+  font-weight: 600;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--accent);
+  color: var(--on-accent);
+  border: none;
+  border-radius: var(--radius-md);
+  height: 38px;
+  padding: 0 16px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+.btn-primary:hover {
+  background: var(--accent-hover);
+}
+
+.btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  height: 38px;
+  padding: 0 15px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--text);
+}
+.btn-secondary:hover {
+  background: var(--surface-alt);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px 3px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 6px 13px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border: 1px solid var(--border);
+  background: var(--surface);
+}
+.chip.active {
+  background: var(--accent-soft);
+  color: var(--accent-soft-text);
+  border-color: transparent;
+}
+
+.avatar {
+  width: 38px;
+  height: 38px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 13px;
+  flex-shrink: 0;
+}
+
+.input {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  height: 38px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.input input {
+  border: none;
+  outline: none;
+  background: transparent;
+  font-size: 13px;
+  font-family: var(--font-body);
+  color: var(--text);
+  width: 100%;
+}
+.input input::placeholder {
+  color: var(--text-faint);
+}

@@ -1,0 +1,170 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:oklch(97.3% 0.008 75);
+  --surface:oklch(99% 0.003 80);
+  --border:oklch(88.5% 0.013 70);
+  --border-soft:oklch(92.5% 0.01 72);
+  --text:oklch(24% 0.02 50);
+  --text-muted:oklch(46% 0.02 55);
+  --text-faint:oklch(63% 0.014 60);
+  --sidebar-bg:oklch(21% 0.017 50);
+  --sidebar-text:oklch(83% 0.012 60);
+  --sidebar-text-muted:oklch(58% 0.02 55);
+  --sidebar-active-bg:oklch(31% 0.035 46);
+  --accent:oklch(62% 0.16 45);
+  --accent-hover:oklch(55% 0.17 42);
+  --accent-soft:oklch(93% 0.035 55);
+  --accent-soft-text:oklch(40% 0.12 40);
+  --on-accent:oklch(99% 0.006 70);
+  --green-bg:oklch(93% 0.05 145); --green-text:oklch(40% 0.13 145);
+  --blue-bg:oklch(93% 0.03 250); --blue-text:oklch(45% 0.12 250);
+  --teal-bg:oklch(92% 0.035 200); --teal-text:oklch(42% 0.11 200);
+  --red-bg:oklch(93% 0.05 25); --red-text:oklch(46% 0.16 25);
+  --gray-bg:oklch(92% 0.006 70); --gray-text:oklch(48% 0.01 60);
+  --shadow-sm:0 1px 2px oklch(20% 0.02 50 / 0.06);
+  --shadow-md:0 4px 14px oklch(20% 0.02 50 / 0.08);
+  --font-display:'Space Grotesk', system-ui, sans-serif;
+  --font-body:'Public Sans', system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font-body);color:var(--text);-webkit-font-smoothing:antialiased;}
+a{color:var(--accent);text-decoration:none;}
+a:hover{color:var(--accent-hover);}
+.navlink{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;color:var(--sidebar-text);font-size:13.5px;font-weight:500;}
+.navlink.active{background:var(--sidebar-active-bg);color:oklch(97% 0.01 60);font-weight:600;}
+.card{background:var(--surface);border:1px solid var(--border-soft);border-radius:14px;box-shadow:var(--shadow-sm);}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--on-accent);border:none;border-radius:8px;height:38px;padding:0 16px;font-family:var(--font-body);font-size:13.5px;font-weight:600;}
+.avatar{width:38px;height:38px;border-radius:999px;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:13px;flex-shrink:0;}
+</style>
+</helmet>
+
+<div style="display:flex;width:1440px;height:820px;background:var(--bg);font-family:var(--font-body);">
+
+  <!-- Sidebar -->
+  <div style="width:240px;flex-shrink:0;background:var(--sidebar-bg);display:flex;flex-direction:column;padding:24px 16px;gap:4px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 8px 24px 8px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M9 5H15V11" stroke="oklch(99% 0.006 70)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:oklch(96% 0.006 70);letter-spacing:-0.01em;">Trade Platform</div>
+    </div>
+
+    <a href="#" class="navlink">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="2.5" width="6.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="11" width="6.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+      Dashboard
+    </a>
+    <a href="#" class="navlink">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="4" y="3.5" width="12" height="14" rx="1.8" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 3.5V2.8C7.5 2.1 8.1 1.5 8.8 1.5H11.2C11.9 1.5 12.5 2.1 12.5 2.8V3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M7 9H13M7 12H13M7 15H10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Jobs
+    </a>
+    <a href="#" class="navlink">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 2.5H15V17.5L13 16L11 17.5L9 16L7 17.5L5 16V2.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.5 6.5H12.5M7.5 9.5H12.5M7.5 12.5H10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Invoices
+    </a>
+    <a href="#" class="navlink active">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="7.2" cy="6.2" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 16.5C2.9 13.6 4.8 11.8 7.2 11.8C9.6 11.8 11.5 13.6 11.9 16.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M13 6.8C13.9 6.5 14.8 7 15.1 7.9C15.4 8.8 14.9 9.7 14 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 11.9C15.4 12.3 16.7 13.7 17 16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Customers
+    </a>
+
+    <div style="height:1px;background:oklch(100% 0 0 / 0.08);margin:12px 4px;"></div>
+
+    <a href="#" class="navlink">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M10 2.5V4.3M10 15.7V17.5M17.5 10H15.7M4.3 10H2.5M15.1 4.9L13.8 6.2M6.2 13.8L4.9 15.1M15.1 15.1L13.8 13.8M6.2 6.2L4.9 4.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Settings
+    </a>
+
+    <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px 8px 4px 8px;border-top:1px solid oklch(100% 0 0 / 0.08);">
+      <div style="width:30px;height:30px;border-radius:999px;background:var(--sidebar-active-bg);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:12px;color:var(--accent-soft);flex-shrink:0;">DT</div>
+      <div style="display:flex;flex-direction:column;min-width:0;">
+        <div style="font-size:12.5px;font-weight:600;color:oklch(93% 0.01 60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dev Trades Co.</div>
+        <div style="font-size:11px;color:var(--sidebar-text-muted);">Free plan</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div style="flex:1;display:flex;flex-direction:column;padding:32px 40px;gap:24px;min-width:0;">
+
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+      <div>
+        <div style="font-family:var(--font-display);font-weight:600;font-size:26px;letter-spacing:-0.01em;">Customers</div>
+        <div style="font-size:13.5px;color:var(--text-muted);margin-top:4px;">Everyone you've worked with, and what's outstanding.</div>
+      </div>
+      <button class="btn-primary">
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 3V17M3 10H17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        New customer
+      </button>
+    </div>
+
+    <div style="display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 12px;width:320px;">
+      <span style="color:var(--text-faint);"><svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M17 17L13.5 13.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
+      <span style="font-size:13px;color:var(--text-faint);">Search customers</span>
+    </div>
+
+    <div class="card" style="padding:6px 24px;display:flex;flex-direction:column;">
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-soft);">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" style="background:var(--accent-soft);color:var(--accent-soft-text);">JW</div>
+          <div><div style="font-size:14px;font-weight:600;">Jane Whitfield</div><div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">jane.whitfield@example.test · 0117 555 0102</div></div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:12.5px;color:var(--text-muted);">2 jobs · 3 invoices</div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-soft);">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" style="background:var(--blue-bg);color:var(--blue-text);">RC</div>
+          <div><div style="font-size:14px;font-weight:600;">Riverside Cafe</div><div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">accounts@riversidecafe.test · 0117 555 0176</div></div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:12.5px;color:var(--text-muted);">4 jobs · 4 invoices</div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-soft);">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" style="background:var(--green-bg);color:var(--green-text);">AC</div>
+          <div><div style="font-size:14px;font-weight:600;">Aldridge Construction</div><div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">accounts@aldridgeconstruction.test · 0117 555 0148</div></div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:12.5px;color:var(--text-muted);">1 job · 1 invoice</div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-soft);">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" style="background:var(--teal-bg);color:var(--teal-text);">PN</div>
+          <div><div style="font-size:14px;font-weight:600;">Priya Nandan</div><div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">priya.nandan@example.test · 0117 555 0193</div></div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:12.5px;color:var(--text-muted);">3 jobs · 2 invoices</div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;border-bottom:1px solid var(--border-soft);">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" style="background:var(--gray-bg);color:var(--gray-text);">ME</div>
+          <div><div style="font-size:14px;font-weight:600;">Marcus Ellery</div><div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">marcus.ellery@example.test · 0117 555 0121</div></div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:12.5px;color:var(--text-muted);">2 jobs · 1 invoice</div></div>
+      </div>
+
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 0;">
+        <div style="display:flex;align-items:center;gap:14px;">
+          <div class="avatar" style="background:var(--accent-soft);color:var(--accent-soft-text);">TB</div>
+          <div><div style="font-size:14px;font-weight:600;">Tom Bracewell</div><div style="font-size:12.5px;color:var(--text-muted);margin-top:2px;">tom.bracewell@example.test · 0117 555 0165</div></div>
+        </div>
+        <div style="text-align:right;"><div style="font-size:12.5px;color:var(--text-muted);">1 job · 0 invoices</div></div>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,249 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:oklch(97.3% 0.008 75);
+  --surface:oklch(99% 0.003 80);
+  --surface-alt:oklch(95.3% 0.01 75);
+  --border:oklch(88.5% 0.013 70);
+  --border-soft:oklch(92.5% 0.01 72);
+  --text:oklch(24% 0.02 50);
+  --text-muted:oklch(46% 0.02 55);
+  --text-faint:oklch(63% 0.014 60);
+  --sidebar-bg:oklch(21% 0.017 50);
+  --sidebar-text:oklch(83% 0.012 60);
+  --sidebar-text-muted:oklch(58% 0.02 55);
+  --sidebar-active-bg:oklch(31% 0.035 46);
+  --accent:oklch(62% 0.16 45);
+  --accent-hover:oklch(55% 0.17 42);
+  --accent-soft:oklch(93% 0.035 55);
+  --accent-soft-text:oklch(40% 0.12 40);
+  --on-accent:oklch(99% 0.006 70);
+  --green-bg:oklch(93% 0.05 145); --green-text:oklch(40% 0.13 145);
+  --blue-bg:oklch(93% 0.03 250); --blue-text:oklch(45% 0.12 250);
+  --teal-bg:oklch(92% 0.035 200); --teal-text:oklch(42% 0.11 200);
+  --red-bg:oklch(93% 0.05 25); --red-text:oklch(46% 0.16 25);
+  --gray-bg:oklch(92% 0.006 70); --gray-text:oklch(48% 0.01 60);
+  --shadow-sm:0 1px 2px oklch(20% 0.02 50 / 0.06);
+  --font-display:'Space Grotesk', system-ui, sans-serif;
+  --font-body:'Public Sans', system-ui, -apple-system, sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;font-family:var(--font-body);color:var(--text);-webkit-font-smoothing:antialiased;}
+a{color:var(--accent);text-decoration:none;}
+a:hover{color:var(--accent-hover);}
+.navlink{display:flex;align-items:center;gap:11px;padding:9px 12px;border-radius:8px;color:var(--sidebar-text);font-size:13.5px;font-weight:500;}
+.navlink.active{background:var(--sidebar-active-bg);color:oklch(97% 0.01 60);font-weight:600;}
+.card{background:var(--surface);border:1px solid var(--border-soft);border-radius:14px;box-shadow:var(--shadow-sm);}
+.pill{display:inline-flex;align-items:center;gap:5px;padding:3px 10px 3px 8px;border-radius:999px;font-size:12px;font-weight:600;white-space:nowrap;}
+.dot{width:6px;height:6px;border-radius:999px;background:currentColor;}
+.btn-secondary{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--border);border-radius:8px;height:38px;padding:0 15px;font-family:var(--font-body);font-size:13.5px;font-weight:600;color:var(--text);}
+.btn-primary{display:inline-flex;align-items:center;gap:8px;background:var(--accent);color:var(--on-accent);border:none;border-radius:8px;height:38px;padding:0 16px;font-family:var(--font-body);font-size:13.5px;font-weight:600;}
+</style>
+</helmet>
+
+<div style="display:flex;width:1440px;height:1080px;background:var(--bg);font-family:var(--font-body);">
+
+  <!-- Sidebar -->
+  <div style="width:240px;flex-shrink:0;background:var(--sidebar-bg);display:flex;flex-direction:column;padding:24px 16px;gap:4px;">
+    <div style="display:flex;align-items:center;gap:10px;padding:6px 8px 24px 8px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="17" height="17" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M9 5H15V11" stroke="oklch(99% 0.006 70)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <div style="font-family:var(--font-display);font-weight:700;font-size:16px;color:oklch(96% 0.006 70);letter-spacing:-0.01em;">Trade Platform</div>
+    </div>
+
+    <a href="#" class="navlink">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="2.5" y="2.5" width="6.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="2.5" width="6.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2.5" y="11" width="6.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="11" y="11" width="6.5" height="6.5" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+      Dashboard
+    </a>
+    <a href="#" class="navlink">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><rect x="4" y="3.5" width="12" height="14" rx="1.8" stroke="currentColor" stroke-width="1.6"/><path d="M7.5 3.5V2.8C7.5 2.1 8.1 1.5 8.8 1.5H11.2C11.9 1.5 12.5 2.1 12.5 2.8V3.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M7 9H13M7 12H13M7 15H10.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Jobs
+    </a>
+    <a href="#" class="navlink active">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M5 2.5H15V17.5L13 16L11 17.5L9 16L7 17.5L5 16V2.5Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M7.5 6.5H12.5M7.5 9.5H12.5M7.5 12.5H10.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Invoices
+    </a>
+    <a href="#" class="navlink">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="7.2" cy="6.2" r="2.5" stroke="currentColor" stroke-width="1.6"/><path d="M2.5 16.5C2.9 13.6 4.8 11.8 7.2 11.8C9.6 11.8 11.5 13.6 11.9 16.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/><path d="M13 6.8C13.9 6.5 14.8 7 15.1 7.9C15.4 8.8 14.9 9.7 14 10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M13.5 11.9C15.4 12.3 16.7 13.7 17 16.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+      Customers
+    </a>
+
+    <div style="height:1px;background:oklch(100% 0 0 / 0.08);margin:12px 4px;"></div>
+
+    <a href="#" class="navlink">
+      <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="3.2" stroke="currentColor" stroke-width="1.6"/><path d="M10 2.5V4.3M10 15.7V17.5M17.5 10H15.7M4.3 10H2.5M15.1 4.9L13.8 6.2M6.2 13.8L4.9 15.1M15.1 15.1L13.8 13.8M6.2 6.2L4.9 4.9" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+      Settings
+    </a>
+
+    <div style="margin-top:auto;display:flex;align-items:center;gap:10px;padding:12px 8px 4px 8px;border-top:1px solid oklch(100% 0 0 / 0.08);">
+      <div style="width:30px;height:30px;border-radius:999px;background:var(--sidebar-active-bg);display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:600;font-size:12px;color:var(--accent-soft);flex-shrink:0;">DT</div>
+      <div style="display:flex;flex-direction:column;min-width:0;">
+        <div style="font-size:12.5px;font-weight:600;color:oklch(93% 0.01 60);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">Dev Trades Co.</div>
+        <div style="font-size:11px;color:var(--sidebar-text-muted);">Free plan</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main content -->
+  <div style="flex:1;display:flex;flex-direction:column;padding:32px 40px;gap:24px;min-width:0;">
+
+    <!-- Header -->
+    <div style="display:flex;justify-content:space-between;align-items:center;">
+      <div style="display:flex;align-items:center;gap:12px;">
+        <a href="#" style="font-size:13px;color:var(--text-muted);font-weight:600;">Invoices</a>
+        <span style="color:var(--text-faint);">/</span>
+        <div style="font-family:var(--font-display);font-weight:600;font-size:20px;">INV-0043</div>
+        <span class="pill" style="background:var(--red-bg);color:var(--red-text);"><span class="dot"></span>Overdue</span>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 3V13M10 13L6.5 9.5M10 13L13.5 9.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/><path d="M3.5 15.5V16.5C3.5 17.3 4.2 18 5 18H15C15.8 18 16.5 17.3 16.5 16.5V15.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+          Download PDF
+        </button>
+        <button class="btn-secondary">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M17.5 2.5L2.5 8.8L9 11L11.2 17.5L17.5 2.5Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M9 11L17.5 2.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          Send reminder
+        </button>
+        <button class="btn-primary">
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 10.2L8.7 12.4L13.5 7.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Mark as paid
+        </button>
+        <a href="#" style="display:flex;align-items:center;font-size:13px;font-weight:600;color:var(--red-text);padding:0 4px;">Void</a>
+      </div>
+    </div>
+
+    <!-- Two column: document + sidebar info -->
+    <div style="display:grid;grid-template-columns:2fr 1fr;gap:24px;align-items:start;">
+
+      <!-- Invoice document -->
+      <div class="card" style="padding:28px;display:flex;flex-direction:column;gap:22px;">
+
+        <div style="display:flex;justify-content:space-between;">
+          <div style="display:flex;flex-direction:column;gap:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div style="width:22px;height:22px;border-radius:6px;background:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M5 15L15 5M9 5H15V11" stroke="oklch(99% 0.006 70)" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </div>
+              <div style="font-family:var(--font-display);font-weight:700;font-size:15px;">Dev Trades Co.</div>
+            </div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">12 Foundry Yard<br>Bristol, BS1 4QT<br>dev@example.test</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px;text-align:right;">
+            <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;">Bill to</div>
+            <div style="font-size:13.5px;font-weight:600;">Aldridge Construction</div>
+            <div style="font-size:12px;color:var(--text-muted);line-height:1.6;">14 Elm Grove<br>Bristol, BS8 2QY</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:36px;padding:16px 0;border-top:1px solid var(--border-soft);border-bottom:1px solid var(--border-soft);">
+          <div><div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;">Invoice number</div><div style="font-size:13.5px;font-weight:600;margin-top:4px;">INV-0043</div></div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;">Issue date</div><div style="font-size:13.5px;font-weight:600;margin-top:4px;">29 Aug 2026</div></div>
+          <div><div style="font-size:11px;font-weight:600;color:var(--red-text);text-transform:uppercase;letter-spacing:0.04em;">Due date</div><div style="font-size:13.5px;font-weight:600;margin-top:4px;color:var(--red-text);">12 Sep 2026</div></div>
+        </div>
+
+        <div>
+          <div style="display:grid;grid-template-columns:0.8fr 3fr 0.7fr 0.9fr 0.9fr;padding:0 4px 8px 4px;border-bottom:1px solid var(--border);font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.03em;">
+            <div>Type</div><div>Description</div><div>Qty</div><div>Unit price</div><div style="text-align:right;">Total</div>
+          </div>
+          <div style="display:grid;grid-template-columns:0.8fr 3fr 0.7fr 0.9fr 0.9fr;align-items:center;padding:11px 4px;border-bottom:1px solid var(--border-soft);font-size:13px;">
+            <div style="color:var(--text-muted);">Labour</div><div>Consumer unit upgrade & rewire — first fix</div><div>1</div><div>£480.00</div><div style="text-align:right;font-variant-numeric:tabular-nums;">£480.00</div>
+          </div>
+          <div style="display:grid;grid-template-columns:0.8fr 3fr 0.7fr 0.9fr 0.9fr;align-items:center;padding:11px 4px;border-bottom:1px solid var(--border-soft);font-size:13px;">
+            <div style="color:var(--text-muted);">Labour</div><div>Second fix & testing</div><div>1</div><div>£320.00</div><div style="text-align:right;font-variant-numeric:tabular-nums;">£320.00</div>
+          </div>
+          <div style="display:grid;grid-template-columns:0.8fr 3fr 0.7fr 0.9fr 0.9fr;align-items:center;padding:11px 4px;border-bottom:1px solid var(--border-soft);font-size:13px;">
+            <div style="color:var(--text-muted);">Materials</div><div>18-way consumer unit & RCBOs</div><div>1</div><div>£165.00</div><div style="text-align:right;font-variant-numeric:tabular-nums;">£165.00</div>
+          </div>
+          <div style="display:grid;grid-template-columns:0.8fr 3fr 0.7fr 0.9fr 0.9fr;align-items:center;padding:11px 4px;font-size:13px;">
+            <div style="color:var(--text-muted);">Materials</div><div>Cable, containment & fixings</div><div>1</div><div>£68.33</div><div style="text-align:right;font-variant-numeric:tabular-nums;">£68.33</div>
+          </div>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;">
+          <div style="width:230px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);"><div>Subtotal</div><div style="font-variant-numeric:tabular-nums;">£1,033.33</div></div>
+            <div style="display:flex;justify-content:space-between;font-size:13px;color:var(--text-muted);"><div>VAT (20%)</div><div style="font-variant-numeric:tabular-nums;">£206.67</div></div>
+            <div style="display:flex;justify-content:space-between;padding-top:8px;border-top:1px solid var(--border);font-family:var(--font-display);font-weight:700;font-size:16px;"><div>Total</div><div style="font-variant-numeric:tabular-nums;">£1,240.00</div></div>
+          </div>
+        </div>
+
+        <div style="padding-top:14px;border-top:1px solid var(--border-soft);">
+          <div style="font-size:11px;font-weight:600;color:var(--text-faint);text-transform:uppercase;letter-spacing:0.04em;margin-bottom:6px;">Notes</div>
+          <div style="font-size:12.5px;color:var(--text-muted);">Payment due within 14 days. Bank transfer preferred — details on request.</div>
+        </div>
+      </div>
+
+      <!-- Right column -->
+      <div style="display:flex;flex-direction:column;gap:20px;">
+
+        <div class="card" style="padding:20px;display:flex;flex-direction:column;gap:16px;">
+          <div style="font-family:var(--font-display);font-weight:600;font-size:14px;">Status timeline</div>
+          <div style="display:flex;flex-direction:column;">
+            <div style="display:flex;gap:12px;">
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div style="width:20px;height:20px;border-radius:999px;background:var(--gray-bg);color:var(--gray-text);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M4 10H16" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></div>
+                <div style="width:1.5px;flex:1;background:var(--border);min-height:28px;"></div>
+              </div>
+              <div style="padding-bottom:16px;"><div style="font-size:13px;font-weight:600;">Draft created</div><div style="font-size:11.5px;color:var(--text-faint);margin-top:2px;">29 Aug, 9:14am</div></div>
+            </div>
+            <div style="display:flex;gap:12px;">
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div style="width:20px;height:20px;border-radius:999px;background:var(--blue-bg);color:var(--blue-text);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M17.5 2.5L2.5 8.8L9 11L11.2 17.5L17.5 2.5Z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg></div>
+                <div style="width:1.5px;flex:1;background:var(--border);min-height:28px;"></div>
+              </div>
+              <div style="padding-bottom:16px;"><div style="font-size:13px;font-weight:600;">Sent to customer</div><div style="font-size:11.5px;color:var(--text-faint);margin-top:2px;">29 Aug, 9:15am</div></div>
+            </div>
+            <div style="display:flex;gap:12px;">
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div style="width:20px;height:20px;border-radius:999px;background:var(--teal-bg);color:var(--teal-text);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M2 10C4 5 8 3.5 10 3.5C12 3.5 16 5 18 10C16 15 12 16.5 10 16.5C8 16.5 4 15 2 10Z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><circle cx="10" cy="10" r="2" stroke="currentColor" stroke-width="1.6"/></svg></div>
+                <div style="width:1.5px;flex:1;background:var(--border);min-height:28px;"></div>
+              </div>
+              <div style="padding-bottom:16px;"><div style="font-size:13px;font-weight:600;">Viewed by customer</div><div style="font-size:11.5px;color:var(--text-faint);margin-top:2px;">30 Aug, 4:52pm · estimated</div></div>
+            </div>
+            <div style="display:flex;gap:12px;">
+              <div style="display:flex;flex-direction:column;align-items:center;">
+                <div style="width:20px;height:20px;border-radius:999px;background:var(--red-bg);color:var(--red-text);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="10" height="10" viewBox="0 0 20 20" fill="none"><path d="M10 5V11" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="14.2" r="1" fill="currentColor"/></svg></div>
+              </div>
+              <div><div style="font-size:13px;font-weight:600;color:var(--red-text);">Now overdue</div><div style="font-size:11.5px;color:var(--text-faint);margin-top:2px;">Due date passed 3 days ago</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="padding:20px;display:flex;flex-direction:column;gap:10px;">
+          <div style="font-family:var(--font-display);font-weight:600;font-size:14px;">Customer</div>
+          <div style="font-size:13.5px;font-weight:600;">Aldridge Construction</div>
+          <div style="font-size:12.5px;color:var(--text-muted);">accounts@aldridgeconstruction.test</div>
+          <div style="font-size:12.5px;color:var(--text-muted);">0117 555 0148</div>
+          <a href="#" style="font-size:12.5px;font-weight:600;margin-top:4px;">View customer →</a>
+        </div>
+
+        <div class="card" style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+          <div style="font-family:var(--font-display);font-weight:600;font-size:14px;">Email activity</div>
+          <div style="display:flex;align-items:center;gap:9px;">
+            <span style="color:var(--green-text);"><svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 10.2L8.7 12.4L13.5 7.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <div style="font-size:12.5px;">Delivered <span style="color:var(--text-faint);">— 29 Aug, 9:15am</span></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:9px;">
+            <span style="color:var(--green-text);"><svg width="15" height="15" viewBox="0 0 20 20" fill="none"><circle cx="10" cy="10" r="7.5" stroke="currentColor" stroke-width="1.6"/><path d="M6.5 10.2L8.7 12.4L13.5 7.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg></span>
+            <div style="font-size:12.5px;">Opened <span style="color:var(--text-faint);">— 30 Aug, 4:52pm</span></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
