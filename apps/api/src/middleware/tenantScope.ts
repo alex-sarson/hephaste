@@ -12,6 +12,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { verifyToken } from "@clerk/backend";
 import { prisma } from "../lib/db.js";
+import { ensureDevAccount, isDevAuthEnabled } from "../lib/devAuth.js";
 
 declare global {
   namespace Express {
@@ -31,6 +32,14 @@ declare global {
  * is valid but no Account exists yet for it.
  */
 export async function resolveAccount(req: Request, res: Response, next: NextFunction) {
+  if (isDevAuthEnabled()) {
+    // See lib/devAuth.ts — local-only, never active in production.
+    const account = await ensureDevAccount();
+    req.accountId = account.id;
+    next();
+    return;
+  }
+
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : null;
 

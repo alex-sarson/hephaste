@@ -5,6 +5,7 @@
 // Phase 0: polling loop + the DETECT_OVERDUE sweep (the simplest job type,
 // good smoke test that the pattern works end-to-end). SEND_INVOICE_EMAIL and
 // SEND_REMINDER handlers land in Phase 1 alongside the invoices module.
+import "../env.js";
 import { prisma } from "../lib/db.js";
 
 const POLL_INTERVAL_MS = 5000;

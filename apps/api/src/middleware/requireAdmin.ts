@@ -5,6 +5,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { verifyToken } from "@clerk/backend";
 import { prisma } from "../lib/db.js";
+import { ensureDevAdmin, isDevAuthEnabled } from "../lib/devAuth.js";
 
 declare global {
   namespace Express {
@@ -16,6 +17,15 @@ declare global {
 }
 
 export async function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (isDevAuthEnabled()) {
+    // See lib/devAuth.ts — local-only, never active in production.
+    const admin = await ensureDevAdmin();
+    req.adminId = admin.id;
+    req.adminRole = admin.role;
+    next();
+    return;
+  }
+
   const authHeader = req.headers.authorization;
   const token = authHeader?.startsWith("Bearer ") ? authHeader.slice("Bearer ".length) : null;
 
