@@ -48,3 +48,9 @@ in `apps/api/src/modules/customers` is a fully wired reference
 implementation of the tenant-scoped repository pattern (brief §7.2); `jobs`
 and `invoices` are stubs following the same pattern, to be filled in during
 Phase 1.
+
+## License
+
+All rights reserved. This code is public for reference only — no license
+is granted to use, copy, modify, or distribute it without prior written
+permission. See [LICENSE](./LICENSE).
