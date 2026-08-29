@@ -4,9 +4,10 @@ A monorepo for trades people to track jobs and process invoicing — a
 responsive web app (installable as a PWA) backed by a Node.js/TypeScript API
 and PostgreSQL, with strict per-account data isolation.
 
-See the full product/architecture brief for the reasoning behind every
-decision below: domain model, invoice lifecycle, auth & tenant isolation,
-email tracking, deployment, and the phased roadmap.
+See [`docs/PROJECT_PLAN.md`](./docs/PROJECT_PLAN.md) for the full
+product/architecture brief behind every decision below: domain model,
+invoice lifecycle, auth & tenant isolation, email tracking, deployment, and
+the phased roadmap.
 
 ## Repo layout
 
