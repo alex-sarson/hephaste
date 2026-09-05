@@ -1,4 +1,9 @@
 import "./env.js";
+// Must be imported before any express.Router() is constructed (i.e. before
+// the route module imports below) — it patches Express 4's router
+// internals so a throw/rejection inside an `async` handler reaches
+// errorHandler instead of hanging the request until client timeout.
+import "express-async-errors";
 import express from "express";
 import cors from "cors";
 import { accountRouter } from "./modules/account/router.js";

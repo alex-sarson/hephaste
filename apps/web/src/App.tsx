@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { SignInButton } from "@clerk/clerk-react";
 import { useAuthToken } from "./auth/context.js";
+import { useAccount } from "./account/context.js";
 import { AppShell } from "./components/AppShell.js";
 import { BrandMark } from "./components/icons.js";
 import { DashboardPage } from "./routes/DashboardPage.js";
@@ -8,6 +9,7 @@ import { JobsPage } from "./routes/JobsPage.js";
 import { InvoicesPage } from "./routes/InvoicesPage.js";
 import { CustomersPage } from "./routes/CustomersPage.js";
 import { SettingsPage } from "./routes/SettingsPage.js";
+import { OnboardingPage } from "./routes/OnboardingPage.js";
 
 function SignedOutScreen() {
   return (
@@ -50,11 +52,20 @@ function SignedOutScreen() {
 
 export function App() {
   const { isSignedIn } = useAuthToken();
+  const { account, loading } = useAccount();
+
+  // Required gate (brief §3a): until onboardingCompletedAt is set, every
+  // path shows the onboarding questionnaire instead of the normal app —
+  // checked before rendering any Route so there's no way to deep-link
+  // around it.
+  const needsOnboarding = isSignedIn && !loading && account && account.onboardingCompletedAt === null;
 
   return (
     <BrowserRouter>
       {!isSignedIn && <SignedOutScreen />}
-      {isSignedIn && (
+      {isSignedIn && loading && <div style={{ minHeight: "100%", background: "var(--bg)" }} />}
+      {isSignedIn && !loading && needsOnboarding && <OnboardingPage />}
+      {isSignedIn && !loading && !needsOnboarding && (
         <AppShell>
           <Routes>
             <Route path="/" element={<DashboardPage />} />

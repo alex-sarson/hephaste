@@ -8,12 +8,17 @@
 > implementation, and a design system (dashboard, jobs, invoice detail,
 > customers, style guide) has been drafted — see the published "Trade
 > Platform Design System" artifact and `design/` for the source mockups.
+> The product scope has since broadened from trades-only to any
+> invoicing/payment-tracking business, via a required onboarding
+> questionnaire that sets per-account terminology — see §3a.
 
 ## Context
 
-Independent trades people (electricians, plumbers, builders, etc.) currently juggle separate tools — or paper/spreadsheets — to track jobs and to invoice customers, with no single place to see "what's outstanding," "what's overdue," or "what job needs invoicing." The goal is a single product, `trade-platform`, where a tradesperson can manage their jobs end-to-end and generate/send/track invoices per job, from either a desktop browser or their phone.
+Independent service providers who invoice clients and need to track payment status — trades people, beauticians, artists taking commissions, and similar — currently juggle separate tools, or paper/spreadsheets, with no single place to see "what's outstanding," "what's overdue," or "what needs invoicing." The goal is a single product, `trade-platform`, usable across any of these industries, where a business owner can manage their work end-to-end and generate/send/track invoices per piece of work, from either a desktop browser or their phone.
 
-Each tradesperson's data must be completely private to them (strict per-account isolation) — the only other actors in the system are internal administrators who support the product itself, not the trades work. The repo is a single monorepo containing every part of the system (frontend, backend, database, infra) so one team can build and evolve it as one coherent codebase.
+The product started scoped narrowly to trades people; that scope has since broadened to any invoicing/payment-tracking business, with trades, beauty & wellness, and arts/commissions as the initial example verticals it's designed around (see §3a). The underlying domain model didn't need to change for this — only the UI vocabulary a given account sees.
+
+Each account's data must be completely private to them (strict per-account isolation) — the only other actors in the system are internal administrators who support the product itself, not the account holder's work. The repo is a single monorepo containing every part of the system (frontend, backend, database, infra) so one team can build and evolve it as one coherent codebase.
 
 **Decisions already made with the user:**
 - **Client**: one responsive React web app, installable as a PWA — no separate native/React Native mobile app.
@@ -79,6 +84,16 @@ Every tenant-owned table carries a non-nullable, indexed `account_id` — this i
 - **Admin**: entirely separate identity table from `Account` (not a role flag) — see §5.
 - **AdminAuditLog**: every admin action against tenant data, logged.
 
+### 3a. Account Onboarding & Terminology
+
+The domain model above is generic enough to serve any invoicing/payment-tracking business — what's industry-specific is purely the words used for it (a trades person's "Job" is a beautician's "Appointment" is an artist's "Commission"). A required, one-time onboarding questionnaire right after account creation (before the dashboard is reachable at all) captures this:
+
+- `Account.industry`: a curated preset (`TRADES`, `BEAUTY`, `ARTS`, `OTHER`) — deliberately stored as a plain validated string, not a Postgres enum, so adding a new industry later is a code-only change (one entry in `industrySchema` + `INDUSTRY_PRESETS`, both in `@trade-platform/shared-types`), never a database migration.
+- Six label columns (`jobLabelSingular`/`Plural`, `customerLabelSingular`/`Plural`, `assetLabelSingular`/`Plural`) store the *resolved* terminology directly — picking a preset just prefills these before submit, and they stay freely editable afterward (initially only from the onboarding screen; a Settings UI for editing them later is not yet built). "Asset" is the neutral third noun covering a trades person's materials, a beautician's products, or an artist's supplies.
+- `Account.onboardingCompletedAt`: `null` until the questionnaire is submitted — the sole gate the web app checks to decide whether to show onboarding instead of the normal dashboard, for any route.
+
+The web app reads these via `useTerminology()` and substitutes them into nav labels and page copy (e.g. "Jobs" nav item, "New job" buttons) instead of hardcoding trade-specific words — see `apps/web/src/account/context.tsx`.
+
 ## 4. Invoice Lifecycle
 
 States: `draft → sent → viewed → paid`, `void` reachable from any non-paid state, plus a **separate `overdue` boolean** (not folded into the status enum) flipped by a daily scheduled sweep (`sent`/`viewed` + `due_date` past + not paid/void) and cleared on `paid`/`void`. Splitting these two axes — "how did the customer engage" vs. "is action needed" — avoids a real modeling trap where one enum can't cleanly represent both at once.
@@ -96,7 +111,7 @@ Business rules live in `packages/invoice-engine` as pure, heavily unit-tested fu
 
 ## 5. Admin Scope & Isolation
 
-Admins support the *product*, not trades work: view account list/metadata (job/invoice counts, billing status) for support; **cannot** browse a tradesperson's customers/jobs/invoice content by default. A "view as account" capability exists only as an explicit, time-boxed, logged break-glass action (`AdminAuditLog`) — the standard SaaS support pattern.
+Admins support the *product*, not the account holder's work: view account list/metadata (job/invoice counts, billing status) for support; **cannot** browse an account's customers/jobs/invoice content by default. A "view as account" capability exists only as an explicit, time-boxed, logged break-glass action (`AdminAuditLog`) — the standard SaaS support pattern.
 
 Architecturally: `Admin` is a fully separate auth identity from `Account` (separate Clerk app/instance or a small internal `apps/admin-web`), admin routes never set the tenant RLS session variable, and a separate `admin_service` Postgres role (`BYPASSRLS`) is used only for the logged metadata/impersonation paths — never for normal tenant traffic.
 

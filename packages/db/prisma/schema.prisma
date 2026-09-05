@@ -28,8 +28,8 @@ datasource db {
 /// multi-user `AccountMember` join table can be added without renaming every
 /// foreign key in the schema. v1 is strictly one human per Account.
 model Account {
-  id             String   @id @default(uuid())
-  authProviderId String   @unique @map("auth_provider_id") // Clerk user id
+  id             String @id @default(uuid())
+  authProviderId String @unique @map("auth_provider_id") // Clerk user id
 
   businessName String  @map("business_name")
   contactEmail String  @map("contact_email")
@@ -55,19 +55,36 @@ model Account {
   invoiceNumberSeq    Int     @default(0) @map("invoice_number_seq")
   currency            String  @default("GBP")
 
+  // Multi-industry onboarding & terminology (see docs/PROJECT_PLAN.md
+  // §3a). `industry` is deliberately a plain string, not a Postgres enum —
+  // validated against the known set only at the Zod boundary
+  // (@trade-platform/shared-types industrySchema) so adding a new industry
+  // later is a code-only change, no migration. The six label columns store
+  // the *resolved* terminology directly (not a preset + override delta);
+  // `onboardingCompletedAt` is the sole gate: null means the required
+  // onboarding questionnaire hasn't run yet.
+  industry              String    @default("OTHER")
+  jobLabelSingular      String?   @map("job_label_singular")
+  jobLabelPlural        String?   @map("job_label_plural")
+  customerLabelSingular String?   @map("customer_label_singular")
+  customerLabelPlural   String?   @map("customer_label_plural")
+  assetLabelSingular    String?   @map("asset_label_singular")
+  assetLabelPlural      String?   @map("asset_label_plural")
+  onboardingCompletedAt DateTime? @map("onboarding_completed_at")
+
   createdAt DateTime  @default(now()) @map("created_at")
   updatedAt DateTime  @updatedAt @map("updated_at")
   deletedAt DateTime? @map("deleted_at")
 
-  customers    Customer[]
-  jobs         Job[]
-  invoices     Invoice[]
-  lineItems    InvoiceLineItem[]
-  statusEvents InvoiceStatusEvent[]
-  emailEvents  EmailEvent[]
-  materials    JobMaterial[]
-  attachments  Attachment[]
-  jobNotes     JobNote[]
+  customers      Customer[]
+  jobs           Job[]
+  invoices       Invoice[]
+  lineItems      InvoiceLineItem[]
+  statusEvents   InvoiceStatusEvent[]
+  emailEvents    EmailEvent[]
+  materials      JobMaterial[]
+  attachments    Attachment[]
+  jobNotes       JobNote[]
   backgroundJobs BackgroundJob[]
 
   @@map("accounts")
@@ -100,12 +117,12 @@ enum AdminRole {
 /// grant, support metadata view, or resend action — the audit trail that
 /// makes the "admins can't normally see tenant content" guarantee credible.
 model AdminAuditLog {
-  id             String   @id @default(uuid())
-  adminId        String   @map("admin_id")
-  action         String
-  targetAccountId String? @map("target_account_id")
-  metadata       Json?
-  createdAt      DateTime @default(now()) @map("created_at")
+  id              String   @id @default(uuid())
+  adminId         String   @map("admin_id")
+  action          String
+  targetAccountId String?  @map("target_account_id")
+  metadata        Json?
+  createdAt       DateTime @default(now()) @map("created_at")
 
   admin Admin @relation(fields: [adminId], references: [id])
 
@@ -263,10 +280,10 @@ enum InvoiceStatus {
 }
 
 model Invoice {
-  id         String  @id @default(uuid())
-  accountId  String  @map("account_id")
-  jobId      String  @map("job_id") // one-to-many Job -> Invoice; no unique constraint (see brief §3.4)
-  customerId String  @map("customer_id") // denormalized for query convenience
+  id         String @id @default(uuid())
+  accountId  String @map("account_id")
+  jobId      String @map("job_id") // one-to-many Job -> Invoice; no unique constraint (see brief §3.4)
+  customerId String @map("customer_id") // denormalized for query convenience
 
   invoiceNumber String        @map("invoice_number")
   status        InvoiceStatus @default(DRAFT)
@@ -287,9 +304,9 @@ model Invoice {
   notesToCustomer String? @map("notes_to_customer")
   pdfUrl          String? @map("pdf_url")
 
-  sentAt         DateTime? @map("sent_at")
-  firstViewedAt  DateTime? @map("first_viewed_at")
-  voidedAt       DateTime? @map("voided_at")
+  sentAt        DateTime? @map("sent_at")
+  firstViewedAt DateTime? @map("first_viewed_at")
+  voidedAt      DateTime? @map("voided_at")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -344,15 +361,15 @@ enum TriggerSource {
 /// Append-only audit trail. Never update Invoice.status without writing one
 /// of these in the same transaction — see packages/invoice-engine.
 model InvoiceStatusEvent {
-  id         String         @id @default(uuid())
-  invoiceId  String         @map("invoice_id")
-  accountId  String         @map("account_id")
-  fromStatus InvoiceStatus? @map("from_status")
-  toStatus   InvoiceStatus  @map("to_status")
-  triggeredBy TriggerSource @map("triggered_by")
-  actorId    String?        @map("actor_id") // accountId or admin id; null for system-triggered
-  metadata   Json?
-  createdAt  DateTime       @default(now()) @map("created_at")
+  id          String         @id @default(uuid())
+  invoiceId   String         @map("invoice_id")
+  accountId   String         @map("account_id")
+  fromStatus  InvoiceStatus? @map("from_status")
+  toStatus    InvoiceStatus  @map("to_status")
+  triggeredBy TriggerSource  @map("triggered_by")
+  actorId     String?        @map("actor_id") // accountId or admin id; null for system-triggered
+  metadata    Json?
+  createdAt   DateTime       @default(now()) @map("created_at")
 
   invoice Invoice @relation(fields: [invoiceId], references: [id])
   account Account @relation(fields: [accountId], references: [id])

@@ -4,6 +4,7 @@
 // and invoices modules exist. Customers is the only module with real data
 // today (see CustomersPage).
 import type { ComponentType } from "react";
+import { useTerminology } from "../account/context.js";
 import { PageHeader } from "../components/PageHeader.js";
 import { InvoiceStatusBadge } from "../components/StatusBadge.js";
 import { CalendarIcon, CheckCircleIcon, PlusIcon, WalletIcon, WarningIcon } from "../components/icons.js";
@@ -81,6 +82,7 @@ const RECENT_INVOICES: Array<{
 ];
 
 export function DashboardPage() {
+  const terminology = useTerminology();
   return (
     <div>
       <PageHeader
@@ -89,7 +91,7 @@ export function DashboardPage() {
         action={
           <button className="btn-primary">
             <PlusIcon />
-            New job
+            New {terminology.job.singular.toLowerCase()}
           </button>
         }
       />
@@ -97,7 +99,7 @@ export function DashboardPage() {
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 20, marginBottom: 24 }}>
         <StatCard label="Outstanding" value="£4,286.50" sublabel="across 6 invoices" icon={WalletIcon} />
         <StatCard label="Overdue" value="£980.00" sublabel="2 invoices need chasing" icon={WarningIcon} tone="red" />
-        <StatCard label="Upcoming jobs" value="5" sublabel="in the next 7 days" icon={CalendarIcon} />
+        <StatCard label={`Upcoming ${terminology.job.plural.toLowerCase()}`} value="5" sublabel="in the next 7 days" icon={CalendarIcon} />
         <StatCard label="Paid this month" value="£3,120.00" sublabel="9 invoices settled" icon={CheckCircleIcon} tone="green" />
       </div>
 
@@ -105,7 +107,9 @@ export function DashboardPage() {
         <div className="card" style={{ padding: "20px 24px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15 }}>Needs invoicing</div>
-            <div style={{ fontSize: 12, color: "var(--text-faint)" }}>{NEEDS_INVOICING.length} completed jobs</div>
+            <div style={{ fontSize: 12, color: "var(--text-faint)" }}>
+              {NEEDS_INVOICING.length} completed {terminology.job.plural.toLowerCase()}
+            </div>
           </div>
           {NEEDS_INVOICING.map((job) => (
             <div
@@ -133,7 +137,7 @@ export function DashboardPage() {
 
         <div className="card" style={{ padding: "20px 24px" }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15, marginBottom: 14 }}>
-            Upcoming jobs
+            Upcoming {terminology.job.plural.toLowerCase()}
           </div>
           {UPCOMING_JOBS.map((job) => (
             <div key={job.title} style={{ padding: "11px 0", borderTop: "1px solid var(--border-soft)" }}>

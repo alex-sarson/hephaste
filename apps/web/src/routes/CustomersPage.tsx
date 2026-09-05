@@ -4,6 +4,7 @@
 // implementation — see brief §7.2).
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useAuthToken } from "../auth/context.js";
+import { useTerminology } from "../account/context.js";
 import { createCustomer, listCustomers, type Customer } from "../api-client/customers.js";
 import { PageHeader } from "../components/PageHeader.js";
 import { PlusIcon, SearchIcon } from "../components/icons.js";
@@ -31,6 +32,7 @@ function paletteFor(id: string) {
 
 export function CustomersPage() {
   const { getToken } = useAuthToken();
+  const terminology = useTerminology();
   const [customers, setCustomers] = useState<Customer[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [name, setName] = useState("");
@@ -74,12 +76,12 @@ export function CustomersPage() {
   return (
     <div>
       <PageHeader
-        title="Customers"
+        title={terminology.customer.plural}
         subtitle="Everyone you've worked with, and what's outstanding."
         action={
           <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
             <PlusIcon />
-            New customer
+            New {terminology.customer.singular.toLowerCase()}
           </button>
         }
       />
@@ -103,7 +105,7 @@ export function CustomersPage() {
             </div>
           </div>
           <button className="btn-primary" type="submit" disabled={submitting}>
-            {submitting ? "Adding…" : "Add customer"}
+            {submitting ? "Adding…" : `Add ${terminology.customer.singular.toLowerCase()}`}
           </button>
         </form>
       )}
@@ -114,7 +116,7 @@ export function CustomersPage() {
 
       <div className="input" style={{ width: 320, marginBottom: 20 }}>
         <SearchIcon style={{ color: "var(--text-faint)" }} />
-        <input placeholder="Search customers" />
+        <input placeholder={`Search ${terminology.customer.plural.toLowerCase()}`} />
       </div>
 
       <div className="card" style={{ padding: "6px 24px" }}>
@@ -123,7 +125,7 @@ export function CustomersPage() {
         )}
         {customers?.length === 0 && (
           <div style={{ padding: "24px 4px", fontSize: 13, color: "var(--text-faint)" }}>
-            No customers yet — add one above.
+            No {terminology.customer.plural.toLowerCase()} yet — add one above.
           </div>
         )}
         {customers?.map((customer, i) => {

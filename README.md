@@ -1,8 +1,12 @@
 # Trade Platform
 
-A monorepo for trades people to track jobs and process invoicing — a
-responsive web app (installable as a PWA) backed by a Node.js/TypeScript API
-and PostgreSQL, with strict per-account data isolation.
+A monorepo for tracking jobs and processing invoicing for any business that
+bills clients — trades people, beauticians, artists taking commissions, and
+similar — a responsive web app (installable as a PWA) backed by a
+Node.js/TypeScript API and PostgreSQL, with strict per-account data
+isolation. A required onboarding questionnaire sets each account's
+terminology (e.g. "Job" vs. "Appointment" vs. "Commission") — see
+`docs/PROJECT_PLAN.md` §3a.
 
 See [`docs/PROJECT_PLAN.md`](./docs/PROJECT_PLAN.md) for the full
 product/architecture brief behind every decision below: domain model,
@@ -48,7 +52,9 @@ Phase 0 (scaffolding) — see the brief's §13 roadmap. The `customers` module
 in `apps/api/src/modules/customers` is a fully wired reference
 implementation of the tenant-scoped repository pattern (brief §7.2); `jobs`
 and `invoices` are stubs following the same pattern, to be filled in during
-Phase 1.
+Phase 1. The required industry onboarding questionnaire (brief §3a) is
+implemented end-to-end — signing in for the first time gates on it before
+the dashboard is reachable.
 
 ## License
 
