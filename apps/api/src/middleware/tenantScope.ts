@@ -12,7 +12,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { verifyToken } from "@clerk/backend";
 import { prisma } from "../lib/db.js";
-import { ensureDevAccount, isDevAuthEnabled } from "../lib/devAuth.js";
+import { DEV_ACCOUNT_AUTH_ID, DEV_ACCOUNT_AUTH_ID_2, ensureDevAccount, isDevAuthEnabled } from "../lib/devAuth.js";
 
 declare global {
   namespace Express {
@@ -33,8 +33,12 @@ declare global {
  */
 export async function resolveAccount(req: Request, res: Response, next: NextFunction) {
   if (isDevAuthEnabled()) {
-    // See lib/devAuth.ts — local-only, never active in production.
-    const account = await ensureDevAccount();
+    // See lib/devAuth.ts — local-only, never active in production. The
+    // web app never sends this header — it exists purely so cross-tenant
+    // isolation tests can act as a second, genuinely different account
+    // through this same middleware (src/tenantIsolation.test.ts).
+    const authProviderId = req.header("x-dev-account") === "2" ? DEV_ACCOUNT_AUTH_ID_2 : DEV_ACCOUNT_AUTH_ID;
+    const account = await ensureDevAccount(authProviderId);
     req.accountId = account.id;
     next();
     return;

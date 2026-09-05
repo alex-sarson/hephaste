@@ -21,6 +21,12 @@ jobsRouter.get("/", async (req, res) => {
 jobsRouter.post("/", async (req, res) => {
   const input = createJobSchema.parse(req.body);
   const job = await jobsRepo.create(req.accountId!, input);
+  if (!job) {
+    // 404, not 403/400 — see brief §7: never confirm whether a resource
+    // exists for another tenant, even indirectly via a referenced id.
+    res.status(404).json({ error: "Customer not found" });
+    return;
+  }
   res.status(201).json(job);
 });
 
