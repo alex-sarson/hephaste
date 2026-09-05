@@ -9,6 +9,11 @@
       "cache": false,
       "persistent": true
     },
+    "jobs-runner": {
+      "cache": false,
+      "persistent": true,
+      "env": ["DATABASE_URL", "AUTH_MODE"]
+    },
     "lint": {
       "dependsOn": ["^build"]
     },

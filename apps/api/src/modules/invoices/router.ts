@@ -4,6 +4,7 @@ import { renderInvoicePdf } from "@trade-platform/pdf";
 import { resolveAccount } from "../../middleware/tenantScope.js";
 import { prisma } from "../../lib/db.js";
 import * as invoicesRepo from "./repository.js";
+import { buildInvoicePdfData } from "./pdfData.js";
 
 // Follows the reference pattern in ../customers/router.ts (brief §7.2).
 // Route shape matches docs/PROJECT_PLAN.md §8: /api/invoices + /send,
@@ -61,9 +62,16 @@ invoicesRouter.post("/:id/send", async (req, res) => {
     res.status(409).json({ error: "Add at least one line item before sending" });
     return;
   }
-  // Real send (PDF render + Postmark) is a later checkpoint — for now this
-  // is the DRAFT -> SENT transition on its own.
+  // The status transition itself is cheap and happens synchronously here
+  // (also what makes the "send again" 409 test meaningful) — it's the
+  // slow/failure-prone part (render a PDF, call an external API) that
+  // brief §9 wants off the request path. That part runs in the
+  // jobs-runner (see src/jobs-runner/index.ts's sendInvoiceEmail), kicked
+  // off by this enqueue.
   const invoice = await invoicesRepo.transition(req.accountId!, req.params.id, "SENT", "MANUAL_USER");
+  await prisma.backgroundJob.create({
+    data: { accountId: req.accountId!, type: "SEND_INVOICE_EMAIL", payload: { invoiceId: req.params.id } },
+  });
   res.json(invoice);
 });
 
@@ -89,36 +97,7 @@ invoicesRouter.get("/:id/pdf", async (req, res) => {
     return;
   }
   const account = await prisma.account.findUniqueOrThrow({ where: { id: req.accountId! } });
-
-  const buffer = await renderInvoicePdf({
-    business: {
-      name: account.businessName,
-      addressLine1: account.addressLine1,
-      addressLine2: account.addressLine2,
-      city: account.city,
-      postcode: account.postcode,
-      email: account.contactEmail,
-      bankAccountName: account.bankAccountName,
-      bankSortCode: account.bankSortCode,
-      bankAccountNumber: account.bankAccountNumber,
-    },
-    customer: invoice.customer,
-    invoiceNumber: invoice.invoiceNumber,
-    issueDate: invoice.issueDate,
-    dueDate: invoice.dueDate,
-    lineItems: invoice.lineItems.map((li) => ({
-      description: li.description,
-      type: li.type,
-      quantity: Number(li.quantity),
-      unitPrice: Number(li.unitPrice),
-      lineTotal: Number(li.lineTotal),
-    })),
-    subtotal: Number(invoice.subtotal),
-    taxRate: Number(invoice.taxRate),
-    taxAmount: Number(invoice.taxAmount),
-    total: Number(invoice.total),
-    notesToCustomer: invoice.notesToCustomer,
-  });
+  const buffer = await renderInvoicePdf(buildInvoicePdfData(invoice, account));
 
   res.setHeader("Content-Type", "application/pdf");
   res.setHeader("Content-Disposition", `inline; filename="${invoice.invoiceNumber}.pdf"`);

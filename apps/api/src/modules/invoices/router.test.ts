@@ -101,6 +101,15 @@ describe("invoice lifecycle", () => {
     expect(sent.status).toBe(200);
     expect(sent.body.status).toBe("SENT");
 
+    // The status flips synchronously, but the actual PDF-render/email
+    // work is deferred to the jobs-runner (brief §9) — verify /send
+    // enqueues that, not that it happened (see
+    // jobs-runner/sendInvoiceEmail.test.ts for the handler itself).
+    const enqueued = await prisma.backgroundJob.findFirst({
+      where: { type: "SEND_INVOICE_EMAIL", payload: { equals: { invoiceId: id } } },
+    });
+    expect(enqueued).not.toBeNull();
+
     const sentAgain = await request(app).post(`/api/invoices/${id}/send`);
     expect(sentAgain.status).toBe(409);
 
