@@ -4,6 +4,11 @@ import { request } from "./client.js";
 export interface Account {
   id: string;
   businessName: string;
+  contactEmail: string;
+  addressLine1: string | null;
+  addressLine2: string | null;
+  city: string | null;
+  postcode: string | null;
   industry: string;
   jobLabelSingular: string | null;
   jobLabelPlural: string | null;
