@@ -24,6 +24,11 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: "postgresql://trade_platform:trade_platform@localhost:5432/trade_platform"
+      # Enables the local-only dev-auth bypass (apps/api/src/lib/devAuth.ts)
+      # for integration tests that hit a real Postgres — never set in a
+      # deployed environment; devAuth.ts also refuses to activate it when
+      # NODE_ENV=production regardless of this value.
+      AUTH_MODE: dev
     steps:
       - uses: actions/checkout@v4
 
