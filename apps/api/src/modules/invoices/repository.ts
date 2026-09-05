@@ -14,7 +14,9 @@ import { assertValidTransition, calculateInvoiceTotals, isOverdue } from "@trade
 import { prisma } from "../../lib/db.js";
 
 const detailInclude = {
-  customer: { select: { id: true, name: true, email: true, phone: true } },
+  customer: {
+    select: { id: true, name: true, email: true, phone: true, addressLine1: true, addressLine2: true, city: true, postcode: true },
+  },
   job: { select: { id: true, title: true } },
   lineItems: { orderBy: { sortOrder: "asc" as const } },
   statusEvents: { orderBy: { createdAt: "asc" as const } },

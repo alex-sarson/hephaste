@@ -3,7 +3,12 @@
   "compilerOptions": {
     "outDir": "dist",
     "rootDir": "src",
-    "types": ["node"]
+    "types": ["node"],
+    // Not used directly here — needed because @trade-platform/pdf exposes
+    // types straight from its .tsx source (see packages/config's removed
+    // declaration/declarationMap note), so tsc follows that import into a
+    // JSX file as part of this project's own compilation.
+    "jsx": "react-jsx"
   },
   "include": ["src/**/*.ts"]
 }

@@ -5,7 +5,7 @@ import type {
   MarkInvoicePaidInput,
   TriggerSource,
 } from "@trade-platform/shared-types";
-import { request } from "./client.js";
+import { API_BASE_URL, request } from "./client.js";
 
 export interface InvoiceLineItem {
   id: string;
@@ -91,4 +91,20 @@ export function markInvoicePaid(token: string, id: string, input: MarkInvoicePai
 
 export function voidInvoice(token: string, id: string) {
   return request<Invoice>(`/api/invoices/${id}/void`, { method: "POST", token });
+}
+
+// Not routed through request() — that helper always calls res.json(), and
+// this response is a PDF, not JSON. Fetched as a Blob and handed a
+// same-origin object URL rather than passed by direct link, since a plain
+// <a href> can't carry the bearer token this endpoint requires.
+export async function getInvoicePdfUrl(token: string, id: string): Promise<string> {
+  const res = await fetch(`${API_BASE_URL}/api/invoices/${id}/pdf`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Request failed: ${res.status}`);
+  }
+  const blob = await res.blob();
+  return URL.createObjectURL(blob);
 }
