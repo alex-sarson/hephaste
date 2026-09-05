@@ -7,6 +7,7 @@ import { BrandMark } from "./components/icons.js";
 import { DashboardPage } from "./routes/DashboardPage.js";
 import { JobsPage } from "./routes/JobsPage.js";
 import { InvoicesPage } from "./routes/InvoicesPage.js";
+import { InvoiceDetailPage } from "./routes/InvoiceDetailPage.js";
 import { CustomersPage } from "./routes/CustomersPage.js";
 import { SettingsPage } from "./routes/SettingsPage.js";
 import { OnboardingPage } from "./routes/OnboardingPage.js";
@@ -71,6 +72,7 @@ export function App() {
             <Route path="/" element={<DashboardPage />} />
             <Route path="/jobs" element={<JobsPage />} />
             <Route path="/invoices" element={<InvoicesPage />} />
+            <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
           </Routes>

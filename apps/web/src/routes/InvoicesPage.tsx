@@ -1,13 +1,17 @@
-// A list view following the same table pattern as JobsPage — the design
-// canvas (design/Invoices.dc.html) mocked the invoice DETAIL screen
-// (line items, status timeline, email activity) rather than a list; that
-// detail layout is the reference for Phase 1 when GET /api/invoices/:id
-// and per-invoice routing exist (brief §13). Sample data until then.
-import { useState } from "react";
+// List view following the same table pattern as JobsPage, now wired to the
+// real invoices module (brief §13, build order item 4). The design canvas
+// (design/Invoices.dc.html) mocked the detail screen instead — see
+// InvoiceDetailPage, which follows that layout.
+import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import type { InvoiceStatus } from "@trade-platform/shared-types";
+import { useAuthToken } from "../auth/context.js";
+import { useTerminology } from "../account/context.js";
+import { createInvoice, listInvoices, type Invoice } from "../api-client/invoices.js";
+import { listJobs, type Job } from "../api-client/jobs.js";
 import { PageHeader } from "../components/PageHeader.js";
 import { InvoiceStatusBadge } from "../components/StatusBadge.js";
-import { ChevronRightIcon, SearchIcon } from "../components/icons.js";
+import { ChevronRightIcon, PlusIcon, SearchIcon } from "../components/icons.js";
 
 const FILTERS: Array<{ label: string; status: InvoiceStatus | "ALL" | "OVERDUE" }> = [
   { label: "All", status: "ALL" },
@@ -18,40 +22,120 @@ const FILTERS: Array<{ label: string; status: InvoiceStatus | "ALL" | "OVERDUE" 
   { label: "Paid", status: "PAID" },
 ];
 
-interface InvoiceRow {
-  number: string;
-  customer: string;
-  amount: string;
-  due: string;
-  status: InvoiceStatus;
-  overdue?: boolean;
+function money(amount: string): string {
+  return `£${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
-const INVOICES: InvoiceRow[] = [
-  { number: "INV-0043", customer: "Aldridge Construction", amount: "£1,240.00", due: "12 Sep", status: "SENT", overdue: true },
-  { number: "INV-0042", customer: "Jane Whitfield", amount: "£340.00", due: "18 Sep", status: "VIEWED" },
-  { number: "INV-0041", customer: "Riverside Cafe", amount: "£615.00", due: "15 Sep", status: "SENT" },
-  { number: "INV-0040", customer: "Priya Nandan", amount: "£890.00", due: "9 Sep", status: "PAID" },
-  { number: "INV-0039", customer: "Marcus Ellery", amount: "£212.00", due: "2 Sep", status: "PAID" },
-  { number: "INV-0038", customer: "Tom Bracewell", amount: "£150.00", due: "—", status: "DRAFT" },
-];
+function formatDue(invoice: Invoice): string {
+  if (!invoice.dueDate) return "—";
+  return new Date(invoice.dueDate).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
 
 export function InvoicesPage() {
+  const { getToken } = useAuthToken();
+  const terminology = useTerminology();
+  const navigate = useNavigate();
+  const [invoices, setInvoices] = useState<Invoice[] | null>(null);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<InvoiceStatus | "ALL" | "OVERDUE">("ALL");
-  const visible = INVOICES.filter((inv) => {
+
+  const [showForm, setShowForm] = useState(false);
+  const [jobId, setJobId] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const [invoicesResult, jobsResult] = await Promise.all([listInvoices(token), listJobs(token)]);
+      setInvoices(invoicesResult);
+      setJobs(jobsResult.filter((j) => j.status === "COMPLETE"));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    setSubmitting(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const invoice = await createInvoice(token, jobId);
+      navigate(`/invoices/${invoice.id}`);
+    } catch (err) {
+      setError((err as Error).message);
+      setSubmitting(false);
+    }
+  }
+
+  const visible = (invoices ?? []).filter((inv) => {
     if (filter === "ALL") return true;
-    if (filter === "OVERDUE") return !!inv.overdue;
+    if (filter === "OVERDUE") return inv.overdue;
     return inv.status === filter;
   });
 
   return (
     <div>
-      <PageHeader title="Invoices" subtitle="Every invoice, and where it stands." />
+      <PageHeader
+        title="Invoices"
+        subtitle="Every invoice, and where it stands."
+        action={
+          <button className="btn-primary" onClick={() => setShowForm((s) => !s)}>
+            <PlusIcon />
+            New invoice
+          </button>
+        }
+      />
+
+      {showForm && (
+        <form
+          onSubmit={handleSubmit}
+          className="card"
+          style={{ padding: 20, display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 20 }}
+        >
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>
+              {terminology.job.singular} to invoice
+            </label>
+            <div className="input">
+              <select
+                value={jobId}
+                onChange={(e) => setJobId(e.target.value)}
+                required
+                style={{ border: "none", outline: "none", background: "transparent", fontSize: 13, width: "100%" }}
+              >
+                <option value="" disabled>
+                  {jobs.length === 0
+                    ? `No completed ${terminology.job.plural.toLowerCase()} yet`
+                    : `Select a completed ${terminology.job.singular.toLowerCase()}…`}
+                </option>
+                {jobs.map((j) => (
+                  <option key={j.id} value={j.id}>
+                    {j.title} — {j.customer.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <button className="btn-primary" type="submit" disabled={submitting || !jobId}>
+            {submitting ? "Creating…" : "Create draft"}
+          </button>
+        </form>
+      )}
+
+      {error && <div style={{ marginBottom: 16, fontSize: 13, color: "var(--red-text)" }}>{error}</div>}
 
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
         <div className="input" style={{ width: 280 }}>
           <SearchIcon style={{ color: "var(--text-faint)" }} />
-          <input placeholder="Search invoices or customers" />
+          <input placeholder={`Search invoices or ${terminology.customer.plural.toLowerCase()}`} />
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {FILTERS.map((f) => (
@@ -82,14 +166,18 @@ export function InvoicesPage() {
           }}
         >
           <div>Invoice</div>
-          <div>Customer</div>
+          <div>{terminology.customer.singular}</div>
           <div>Amount</div>
           <div>Due</div>
           <div>Status</div>
           <div />
         </div>
 
-        {visible.length === 0 && (
+        {invoices === null && !error && (
+          <div style={{ padding: "24px 4px", fontSize: 13, color: "var(--text-faint)" }}>Loading…</div>
+        )}
+
+        {invoices !== null && visible.length === 0 && (
           <div style={{ padding: "24px 4px", fontSize: 13, color: "var(--text-faint)" }}>
             No invoices match this filter.
           </div>
@@ -97,7 +185,8 @@ export function InvoicesPage() {
 
         {visible.map((invoice, i) => (
           <div
-            key={invoice.number}
+            key={invoice.id}
+            onClick={() => navigate(`/invoices/${invoice.id}`)}
             style={{
               display: "grid",
               gridTemplateColumns: "110px 1.6fr 0.9fr 0.9fr 0.9fr 32px",
@@ -105,12 +194,13 @@ export function InvoicesPage() {
               padding: "13px 4px",
               borderBottom: i < visible.length - 1 ? "1px solid var(--border-soft)" : undefined,
               fontSize: 13,
+              cursor: "pointer",
             }}
           >
-            <div style={{ fontWeight: 600 }}>{invoice.number}</div>
-            <div>{invoice.customer}</div>
-            <div style={{ fontVariantNumeric: "tabular-nums" }}>{invoice.amount}</div>
-            <div style={{ color: "var(--text-muted)" }}>{invoice.due}</div>
+            <div style={{ fontWeight: 600 }}>{invoice.invoiceNumber}</div>
+            <div>{invoice.customer.name}</div>
+            <div style={{ fontVariantNumeric: "tabular-nums" }}>{money(invoice.total)}</div>
+            <div style={{ color: "var(--text-muted)" }}>{formatDue(invoice)}</div>
             <div>
               <InvoiceStatusBadge status={invoice.status} overdue={invoice.overdue} />
             </div>
