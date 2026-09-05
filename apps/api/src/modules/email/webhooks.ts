@@ -1,75 +1,104 @@
-// Postmark inbound webhook handler — see brief §9.3. Drives the
-// SENT -> VIEWED invoice transition and is the sole writer of EmailEvent
-// rows for inbound provider events (outbound "sent" events are written by
-// the jobs-runner send job itself, see ../../jobs-runner/index.ts).
+// Resend inbound webhook handler — see brief §9. Drives the SENT ->
+// VIEWED invoice transition and is the sole writer of EmailEvent rows for
+// inbound provider events (outbound "sent" events are written by the
+// jobs-runner send job itself, see ../../jobs-runner/index.ts).
 //
-// Mounted at POST /api/webhooks/postmark, deliberately NOT behind
-// resolveAccount — the caller is Postmark, not a tenant session. Tenant
+// Originally built against Postmark; switched to Resend because Postmark's
+// signup flow rejects public/free email domains, which blocked account
+// creation entirely. The EmailEvent schema (providerMessageId,
+// EmailEventType enum) was already provider-agnostic, so only this file,
+// its route registration, and env var names needed to change.
+//
+// Mounted at POST /api/webhooks/resend, deliberately NOT behind
+// resolveAccount — the caller is Resend, not a tenant session. Tenant
 // scope is derived from the invoice the event correlates to via
-// provider_message_id.
+// provider_message_id (Resend's `data.email_id`).
 import type { Request, Response } from "express";
+import { Webhook, WebhookVerificationError } from "svix";
 import type { EmailEventType } from "@trade-platform/shared-types";
 import { assertValidTransition } from "@trade-platform/invoice-engine";
 import { prisma } from "../../lib/db.js";
 
-// Postmark's outbound-message webhook payload shape (subset of fields used
-// here). See https://postmarkapp.com/developer/webhooks/webhooks-overview.
-interface PostmarkWebhookPayload {
-  RecordType: "Delivery" | "Open" | "Bounce" | "SpamComplaint";
-  MessageID: string;
-  Recipient?: string;
-  Email?: string;
-  ReceivedAt?: string;
-  DeliveredAt?: string;
-  BouncedAt?: string;
+declare global {
+  namespace Express {
+    interface Request {
+      // Populated by server.ts's express.json({ verify }) for every
+      // request — Svix signature verification needs the exact raw bytes
+      // that were signed, which the already-parsed req.body can't
+      // guarantee (key order/whitespace can differ after a
+      // parse-then-restringify round trip).
+      rawBody?: Buffer;
+    }
+  }
 }
 
-const RECORD_TYPE_TO_EVENT_TYPE: Record<PostmarkWebhookPayload["RecordType"], EmailEventType> = {
-  Delivery: "DELIVERED",
-  Open: "OPENED",
-  Bounce: "BOUNCED",
-  SpamComplaint: "SPAM_COMPLAINT",
+// Resend's webhook event shape (subset of fields used here). Delivered via
+// Svix — see https://resend.com/docs/dashboard/webhooks/event-types.
+interface ResendWebhookPayload {
+  type:
+    | "email.sent"
+    | "email.delivered"
+    | "email.delivery_delayed"
+    | "email.complained"
+    | "email.bounced"
+    | "email.opened"
+    | "email.clicked"
+    | "email.failed";
+  created_at: string;
+  data: {
+    email_id: string;
+    to?: string[];
+  };
+}
+
+const EVENT_TYPE_MAP: Partial<Record<ResendWebhookPayload["type"], EmailEventType>> = {
+  "email.sent": "SENT",
+  "email.delivered": "DELIVERED",
+  "email.opened": "OPENED",
+  "email.bounced": "BOUNCED",
+  "email.complained": "SPAM_COMPLAINT",
 };
 
-function verifyPostmarkAuth(req: Request): boolean {
-  // Postmark webhooks are verified via HTTP Basic Auth configured on the
-  // webhook URL itself (recommended in their docs) rather than a signature
-  // header. Compare against a secret pair set via env vars.
-  const auth = req.headers.authorization;
-  const expected = process.env.POSTMARK_WEBHOOK_BASIC_AUTH; // "user:pass", base64-free
-  if (!expected || !auth?.startsWith("Basic ")) return false;
-  const decoded = Buffer.from(auth.slice("Basic ".length), "base64").toString("utf8");
-  return decoded === expected;
+function verifySignature(req: Request): unknown | null {
+  const secret = process.env.RESEND_WEBHOOK_SECRET;
+  if (!secret || !req.rawBody) return null;
+  try {
+    return new Webhook(secret).verify(req.rawBody, {
+      "svix-id": req.header("svix-id") ?? "",
+      "svix-timestamp": req.header("svix-timestamp") ?? "",
+      "svix-signature": req.header("svix-signature") ?? "",
+    });
+  } catch (err) {
+    if (err instanceof WebhookVerificationError) return null;
+    throw err;
+  }
 }
 
-export async function handlePostmarkWebhook(req: Request, res: Response) {
-  if (!verifyPostmarkAuth(req)) {
+export async function handleResendWebhook(req: Request, res: Response) {
+  const verified = verifySignature(req);
+  if (!verified) {
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
 
-  const payload = req.body as PostmarkWebhookPayload;
-  const eventType = RECORD_TYPE_TO_EVENT_TYPE[payload.RecordType];
+  const payload = req.body as ResendWebhookPayload;
+  const eventType = EVENT_TYPE_MAP[payload.type];
   if (!eventType) {
-    // Unrecognized record type — ack anyway so Postmark doesn't retry
-    // indefinitely for an event type we deliberately don't handle.
+    // Unrecognized/unhandled event type (delivery_delayed, clicked,
+    // failed) — ack anyway so Resend doesn't retry indefinitely for
+    // something we deliberately don't handle.
     res.status(200).json({ ignored: true });
     return;
   }
 
-  const occurredAt = new Date(
-    payload.DeliveredAt ?? payload.ReceivedAt ?? payload.BouncedAt ?? Date.now(),
-  );
-  const recipientEmail = payload.Recipient ?? payload.Email ?? "unknown";
+  const occurredAt = new Date(payload.created_at);
+  const recipientEmail = payload.data.to?.[0] ?? "unknown";
+  const providerMessageId = payload.data.email_id;
 
-  // Idempotency: Postmark can redeliver the same webhook. Dedupe on the
+  // Idempotency: Resend/Svix can redeliver the same webhook. Dedupe on the
   // natural key before doing anything else.
   const existing = await prisma.emailEvent.findFirst({
-    where: {
-      providerMessageId: payload.MessageID,
-      eventType,
-      occurredAt,
-    },
+    where: { providerMessageId, eventType, occurredAt },
   });
   if (existing) {
     res.status(200).json({ deduped: true });
@@ -78,16 +107,16 @@ export async function handlePostmarkWebhook(req: Request, res: Response) {
 
   // Correlate back to the invoice this message was sent for. The send job
   // (jobs-runner) must have already written an EmailEvent with
-  // eventType SENT carrying this MessageID for this lookup to succeed.
+  // eventType SENT carrying this email_id for this lookup to succeed.
   const sentEvent = await prisma.emailEvent.findFirst({
-    where: { providerMessageId: payload.MessageID, eventType: "SENT" },
+    where: { providerMessageId, eventType: "SENT" },
     select: { accountId: true, invoiceId: true },
   });
 
   if (!sentEvent) {
     // We have no record of sending this message — log for investigation
-    // but still 200 so Postmark doesn't retry forever.
-    console.error(`Postmark webhook for unknown MessageID: ${payload.MessageID}`);
+    // but still 200 so Resend doesn't retry forever.
+    console.error(`Resend webhook for unknown email_id: ${providerMessageId}`);
     res.status(200).json({ warning: "unknown message id" });
     return;
   }
@@ -97,7 +126,7 @@ export async function handlePostmarkWebhook(req: Request, res: Response) {
       data: {
         accountId: sentEvent.accountId,
         invoiceId: sentEvent.invoiceId,
-        providerMessageId: payload.MessageID,
+        providerMessageId,
         eventType,
         recipientEmail,
         occurredAt,
@@ -129,7 +158,7 @@ export async function handlePostmarkWebhook(req: Request, res: Response) {
             fromStatus: "SENT",
             toStatus: "VIEWED",
             triggeredBy: "EMAIL_WEBHOOK",
-            metadata: { postmarkMessageId: payload.MessageID },
+            metadata: { resendEmailId: providerMessageId },
           },
         });
       }

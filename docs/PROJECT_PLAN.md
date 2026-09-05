@@ -80,7 +80,7 @@ Every tenant-owned table carries a non-nullable, indexed `account_id` — this i
 - **Invoice**: belongs to account + job (+ denormalized customer) — modeled **one-to-many Job→Invoice** (not unique) so a follow-up/supplementary invoice on the same job is possible later, even though v1 UI only creates one. `status` enum (`draft, sent, viewed, paid, void`) plus a separate `overdue: boolean` flag (see §4 for why these are split), subtotal/tax/total, `amount_paid`, `paid_method` (free text — no processor), PDF URL, timestamps for sent/first-viewed/paid/voided.
 - **InvoiceLineItem**: description, type (labour/materials/other), quantity, unit price, stored line total (not recomputed later, for historical accuracy).
 - **InvoiceStatusEvent**: append-only audit trail of every status transition (from/to, trigger source, actor, metadata) — never mutate `Invoice.status` without writing one of these in the same transaction.
-- **EmailEvent**: one row per Postmark webhook event (sent/delivered/opened/bounced), correlated via `provider_message_id`, raw payload retained for debugging.
+- **EmailEvent**: one row per email provider webhook event (sent/delivered/opened/bounced), correlated via `provider_message_id`, raw payload retained for debugging.
 - **Admin**: entirely separate identity table from `Account` (not a role flag) — see §5.
 - **AdminAuditLog**: every admin action against tenant data, logged.
 
@@ -102,7 +102,7 @@ States: `draft → sent → viewed → paid`, `void` reachable from any non-paid
 |---|---|
 | → `draft` | User creates invoice from a job |
 | `draft` → `sent` | User sends; triggers PDF gen + email (line items lock) |
-| `sent` → `viewed` | Postmark `Open` webhook |
+| `sent` → `viewed` | Resend `email.opened` webhook |
 | any → `overdue=true` | Daily scheduled sweep |
 | → `paid` | Manual "Mark as Paid" |
 | non-paid → `void` | Manual cancel |
@@ -137,13 +137,13 @@ Dedicated integration tests assert cross-account access is blocked at both layer
 
 ## 8. API Design
 
-**REST**, not GraphQL — the domain is small, resource-oriented CRUD with one first-party client; GraphQL's benefits don't pay for themselves here. Zod schemas from `packages/shared-types` validate every request at the route boundary. Route groups: `/api/account`, `/api/customers`, `/api/jobs` (+ `/materials`, `/attachments`, `/status`), `/api/invoices` (+ `/send`, `/mark-paid`, `/void`, `/pdf`), `/api/webhooks/postmark`, `/api/dashboard/summary`, `/api/reports`, `/admin/*` (separate middleware, never RLS-scoped to a tenant).
+**REST**, not GraphQL — the domain is small, resource-oriented CRUD with one first-party client; GraphQL's benefits don't pay for themselves here. Zod schemas from `packages/shared-types` validate every request at the route boundary. Route groups: `/api/account`, `/api/customers`, `/api/jobs` (+ `/materials`, `/attachments`, `/status`), `/api/invoices` (+ `/send`, `/mark-paid`, `/void`, `/pdf`), `/api/webhooks/resend`, `/api/dashboard/summary`, `/api/reports`, `/admin/*` (separate middleware, never RLS-scoped to a tenant).
 
 ## 9. Email Sending & Tracking
 
-**Postmark**: transactional-first deliverability, first-class webhook support (Delivery/Open/Bounce/SpamComplaint) — exactly the primitives needed to drive `sent`/`viewed` without building custom pixel tracking, simple pay-per-email pricing for early low volume. (Resend is a reasonable close alternative if preferred; the `EmailEvent` table is provider-agnostic.)
+**Resend**: transactional-first deliverability, webhook support (sent/delivered/opened/bounced/complained via Svix-signed events) — the primitives needed to drive `sent`/`viewed` without building custom pixel tracking. Originally scoped as Postmark; switched after Postmark's signup flow rejected a public/free email domain for account creation, blocking sign-up outright before any code here was provider-committal. `EmailEvent` was already provider-agnostic (`provider_message_id`, a generic `EmailEventType` enum), so the switch only touched `apps/api/src/modules/email/webhooks.ts`, its route (`/api/webhooks/resend`), and env var names — not the domain model.
 
-Send flow: sending enqueues a background job (not synchronous in the request) that renders the PDF, uploads it, calls Postmark, and records `provider_message_id`. Inbound webhook handler is idempotent (dedupe on message id + event type + timestamp), writes `EmailEvent`, and transitions `sent → viewed` on first open. UI should label viewed status as best-effort ("Viewed (estimated)") since pixel-based open tracking is inherently imperfect.
+Send flow: sending enqueues a background job (not synchronous in the request) that renders the PDF, uploads it, calls Resend, and records `provider_message_id` (Resend's `email_id`). Inbound webhook handler verifies the Svix signature, is idempotent (dedupe on message id + event type + timestamp), writes `EmailEvent`, and transitions `sent → viewed` on first open. UI should label viewed status as best-effort ("Viewed (estimated)") since pixel-based open tracking is inherently imperfect.
 
 ## 10. Background Jobs
 
@@ -162,7 +162,7 @@ Sized small deliberately: managed Postgres with automated backups/PITR (non-nego
 ## 13. Phased Roadmap
 
 - **Phase 0 (scaffolding)** — ✅ done: monorepo skeleton, full Prisma schema up front (cheap to write once, painful to bolt on piecemeal), Clerk wired in (plus a local dev-auth bypass), CI running on the repo. The `customers` module is the fully wired reference implementation of the tenant-scoped repository pattern; `jobs` and `invoices` are stubs following the same pattern. A design system (dashboard, jobs, invoice detail, customers, style guide) has been drafted and partially implemented in `apps/web`.
-- **Phase 1 (MVP)**: build order — account setup → customers → jobs (+ materials/attachments) → invoice creation/line items/tax (engine tests first) → PDF → Postmark send + job runner → webhook ingestion → overdue sweep → dashboard → tenant-isolation tests + RLS → PWA polish → minimal admin view.
+- **Phase 1 (MVP)**: build order — account setup → customers → jobs (+ materials/attachments) → invoice creation/line items/tax (engine tests first) → PDF → Resend send + job runner → webhook ingestion → overdue sweep → dashboard → tenant-isolation tests + RLS → PWA polish → minimal admin view.
 - **Phase 2**: reminders, reporting, branding, notifications, CSV export, quotes.
 - **Phase 3+**: payments, multi-user accounts, offline-first, native app, credit notes/multi-currency — revisit only with real demand.
 
@@ -170,10 +170,10 @@ Sized small deliberately: managed Postgres with automated backups/PITR (non-nego
 - `packages/db/schema.prisma` — the domain model and RLS migration anchor point.
 - `packages/invoice-engine/src/stateMachine.ts` — transition rules + tax/total math.
 - `apps/api/src/middleware/tenantScope.ts` — the entire tenant-isolation guarantee.
-- `apps/api/src/modules/email/webhooks.ts` — Postmark inbound handler driving status.
+- `apps/api/src/modules/email/webhooks.ts` — Resend inbound handler driving status.
 - `apps/api/src/jobs-runner/index.ts` — background worker (send, overdue sweep).
 - `turbo.json` / `pnpm-workspace.yaml` — the monorepo package graph everything else depends on.
 
 ## Verification
 
-Once scaffolded: `pnpm install && docker compose up -d` (local Postgres), `pnpm --filter db prisma migrate dev`, `pnpm dev` to run API + web together, then manually walk the critical path (sign up → create customer → create job → create invoice → send → confirm Postmark sandbox delivery → simulate webhook → confirm status flips to `viewed`). CI (`turbo run lint typecheck test`) should pass, with the tenant-isolation and invoice-engine test suites treated as release-blocking from day one.
+Once scaffolded: `pnpm install && docker compose up -d` (local Postgres), `pnpm --filter db prisma migrate dev`, `pnpm dev` to run API + web together, then manually walk the critical path (sign up → create customer → create job → create invoice → send → confirm Resend sandbox delivery → simulate webhook → confirm status flips to `viewed`). CI (`turbo run lint typecheck test`) should pass, with the tenant-isolation and invoice-engine test suites treated as release-blocking from day one.

@@ -11,13 +11,28 @@ import { customersRouter } from "./modules/customers/router.js";
 import { jobsRouter } from "./modules/jobs/router.js";
 import { invoicesRouter } from "./modules/invoices/router.js";
 import { adminRouter } from "./modules/admin/router.js";
-import { handlePostmarkWebhook } from "./modules/email/webhooks.js";
+import { handleResendWebhook } from "./modules/email/webhooks.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 
 const app = express();
 
 app.use(cors());
-app.use(express.json());
+// `verify` stashes the exact raw bytes on every request as req.rawBody —
+// only modules/email/webhooks.ts uses it (Svix signature verification
+// needs the exact bytes that were signed, not a reparsed/restringified
+// version of req.body), but capturing it here for every request is
+// simpler and cheaper than giving that one route its own body parser
+// ahead of this global one (which would otherwise have already drained
+// the request stream).
+app.use(
+  express.json({
+    // body-parser types `verify`'s req as the raw http.IncomingMessage
+    // (not Express's augmented Request), hence the cast.
+    verify: (req, _res, buf) => {
+      (req as express.Request).rawBody = buf;
+    },
+  }),
+);
 
 app.get("/health", (_req, res) => {
   res.json({ ok: true });
@@ -30,7 +45,7 @@ app.use("/api/jobs", jobsRouter);
 app.use("/api/invoices", invoicesRouter);
 
 // Inbound provider webhook — no tenant session, see webhooks.ts.
-app.post("/api/webhooks/postmark", handlePostmarkWebhook);
+app.post("/api/webhooks/resend", handleResendWebhook);
 
 // Admin routes — separate auth path, never RLS-scoped to a tenant. See
 // brief §5.3 and middleware/requireAdmin.ts.

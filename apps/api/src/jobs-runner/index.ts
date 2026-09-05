@@ -31,11 +31,11 @@ export async function detectOverdue() {
  * modules/invoices/router.ts's POST /:id/send) — this only needs to
  * record that the email side actually went out.
  *
- * No POSTMARK_SERVER_TOKEN is configured (stubbed on purpose, matching
- * the dev-auth bypass's philosophy — swap in a real Postmark call once a
- * key exists), so this logs what *would* have been sent instead of
- * calling Postmark, but still renders a real PDF and writes a real
- * EmailEvent(SENT) row with a providerMessageId — the row the Postmark
+ * No RESEND_API_KEY is configured (stubbed on purpose, matching the
+ * dev-auth bypass's philosophy — swap in a real Resend call once a key
+ * exists), so this logs what *would* have been sent instead of actually
+ * calling Resend, but still renders a real PDF and writes a real
+ * EmailEvent(SENT) row with a providerMessageId — the row the Resend
  * webhook handler (modules/email/webhooks.ts) needs to later correlate
  * an Open event against and drive SENT -> VIEWED.
  */
@@ -70,7 +70,7 @@ export async function sendInvoiceEmail(payload: { invoiceId: string }) {
 
   console.log(
     `[dev email stub] Would send ${invoice.invoiceNumber} to ${invoice.customer.email ?? "(no email on file)"}` +
-      ` — ${pdfBuffer.length}-byte PDF attached. No POSTMARK_SERVER_TOKEN configured, so nothing was actually delivered.`,
+      ` — ${pdfBuffer.length}-byte PDF attached. No RESEND_API_KEY configured, so nothing was actually delivered.`,
   );
 
   await prisma.emailEvent.create({
@@ -126,7 +126,7 @@ async function runJob(job: { id: string; type: string; payload: unknown }) {
     // NOTE: a FAILED job is never retried today — attempts/maxAttempts
     // exist on the schema but nothing resets status back to PENDING.
     // Fine for a stubbed send (nothing external can actually fail yet);
-    // worth revisiting once this calls a real Postmark API that can.
+    // worth revisiting once this calls a real Resend API that can.
     console.error(`Job ${job.id} (${job.type}) failed:`, err);
     await prisma.backgroundJob.update({
       where: { id: job.id },

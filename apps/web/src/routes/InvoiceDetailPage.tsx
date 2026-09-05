@@ -1,7 +1,7 @@
 // Matches design/Invoices.dc.html's invoice detail mockup (line items,
 // totals, status timeline). Line items/due date/notes are editable while
 // DRAFT (brief §4 — locked once sent); email activity is a later
-// checkpoint (Postmark) and is left out rather than shown as a dead panel.
+// checkpoint (Resend) and is left out rather than shown as a dead panel.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { calculateInvoiceTotals } from "@trade-platform/invoice-engine";

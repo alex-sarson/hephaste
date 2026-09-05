@@ -1,5 +1,5 @@
 // Phase 0 placeholder. Real templates (invoice-sent, payment-reminder) land
-// in Phase 1 alongside the Postmark send integration — see brief §9.
+// in Phase 1 alongside the Resend send integration — see brief §9.
 // Likely implemented with @react-email/components once that work starts.
 
 export interface InvoiceEmailData {
