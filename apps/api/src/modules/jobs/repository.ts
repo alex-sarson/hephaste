@@ -25,7 +25,18 @@ export function findById(accountId: string, id: string) {
   });
 }
 
-export function create(accountId: string, input: CreateJobInput) {
+export async function create(accountId: string, input: CreateJobInput) {
+  // Without this check, `input.customerId` is trusted as-is — a caller
+  // could create a job under their own accountId that points at another
+  // tenant's customer, and every subsequent fetch of that job would
+  // happily join and return that customer's name/email/phone. Caught by
+  // src/tenantIsolation.test.ts.
+  const customer = await prisma.customer.findFirst({
+    where: { id: input.customerId, accountId, deletedAt: null },
+    select: { id: true },
+  });
+  if (!customer) return null;
+
   return prisma.job.create({
     data: { ...input, accountId },
     include: customerSelect,
