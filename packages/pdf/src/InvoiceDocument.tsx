@@ -3,6 +3,17 @@
 // not CSS) — it mirrors the same information architecture as
 // InvoiceDetailPage/design/Invoices.dc.html (bill-from/bill-to, line
 // items, totals, notes) in a plain, printable document.
+// Explicit React import even though this file never names `React`
+// directly — the automatic JSX runtime (tsconfig's "jsx": "react-jsx")
+// isn't reliably applied here: apps/api's `tsx watch` process resolves a
+// single JSX transform for the whole run from its own entry point rather
+// than per-file against this package's tsconfig.json, and fell back to
+// the classic transform (`React.createElement`) at runtime, throwing
+// "ReferenceError: React is not defined" the first time this rendered
+// from a live dev-server request (vitest, run from within this package,
+// picked the transform correctly and never surfaced it). Keeping this
+// import makes the file correct under either transform.
+import React from "react";
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
 import type { InvoicePdfData } from "./index.js";
 
