@@ -122,3 +122,28 @@ describe("invoice lifecycle", () => {
     expect(voided.body.status).toBe("VOID");
   });
 });
+
+describe("GET /api/invoices/:id/pdf", () => {
+  it("returns a PDF for an existing invoice", async () => {
+    const jobId = await createJob(true);
+    const created = await request(app).post("/api/invoices").send({ jobId });
+
+    // supertest/superagent has no built-in parser for application/pdf, so
+    // rather than fight its body/text parsing for a binary response, just
+    // confirm real PDF bytes actually came back — the pdf package's own
+    // tests already cover the document content itself.
+    const res = await request(app).get(`/api/invoices/${created.body.id}/pdf`).buffer(true).parse((response, callback) => {
+      const chunks: Buffer[] = [];
+      response.on("data", (chunk: Buffer) => chunks.push(chunk));
+      response.on("end", () => callback(null, Buffer.concat(chunks)));
+    });
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toBe("application/pdf");
+    expect((res.body as Buffer).subarray(0, 5).toString("ascii")).toBe("%PDF-");
+  });
+
+  it("404s for an invoice that doesn't exist", async () => {
+    const res = await request(app).get(`/api/invoices/${randomUUID()}/pdf`);
+    expect(res.status).toBe(404);
+  });
+});

@@ -1,8 +1,7 @@
 // Matches design/Invoices.dc.html's invoice detail mockup (line items,
 // totals, status timeline). Line items/due date/notes are editable while
-// DRAFT (brief §4 — locked once sent); PDF download and email activity are
-// later checkpoints (PDF generation, Postmark) and are left out rather
-// than shown as dead buttons.
+// DRAFT (brief §4 — locked once sent); email activity is a later
+// checkpoint (Postmark) and is left out rather than shown as a dead panel.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { calculateInvoiceTotals } from "@trade-platform/invoice-engine";
@@ -11,6 +10,7 @@ import { useAuthToken } from "../auth/context.js";
 import { useAccount } from "../account/context.js";
 import {
   getInvoice,
+  getInvoicePdfUrl,
   markInvoicePaid,
   sendInvoice,
   updateInvoice,
@@ -18,7 +18,7 @@ import {
   type Invoice,
 } from "../api-client/invoices.js";
 import { InvoiceStatusBadge } from "../components/StatusBadge.js";
-import { PlusIcon } from "../components/icons.js";
+import { DownloadIcon, PlusIcon } from "../components/icons.js";
 
 const LINE_ITEM_TYPES: LineItemType[] = ["LABOUR", "MATERIALS", "OTHER"];
 const TYPE_LABEL: Record<LineItemType, string> = { LABOUR: "Labour", MATERIALS: "Materials", OTHER: "Other" };
@@ -65,6 +65,7 @@ export function InvoiceDetailPage() {
   const [showMarkPaid, setShowMarkPaid] = useState(false);
   const [amountPaid, setAmountPaid] = useState("");
   const [paidMethod, setPaidMethod] = useState("");
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -178,6 +179,25 @@ export function InvoiceDetailPage() {
     }
   }
 
+  async function handleDownloadPdf() {
+    setDownloadingPdf(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const url = await getInvoicePdfUrl(token, invoice!.id);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${invoice!.invoiceNumber}.pdf`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setDownloadingPdf(false);
+    }
+  }
+
   return (
     <div>
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -190,6 +210,10 @@ export function InvoiceDetailPage() {
           <InvoiceStatusBadge status={invoice.status} overdue={invoice.overdue} />
         </div>
         <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+          <button className="btn-secondary" onClick={handleDownloadPdf} disabled={downloadingPdf}>
+            <DownloadIcon />
+            {downloadingPdf ? "Preparing…" : "Download PDF"}
+          </button>
           {isDraft && (
             <button className="btn-primary" onClick={handleSend} disabled={saving || cleanLineItems.length === 0}>
               {saving ? "Sending…" : "Save & send"}

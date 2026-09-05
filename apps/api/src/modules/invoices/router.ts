@@ -1,6 +1,8 @@
 import { Router } from "express";
 import { createInvoiceSchema, markInvoicePaidSchema, updateInvoiceSchema } from "@trade-platform/shared-types";
+import { renderInvoicePdf } from "@trade-platform/pdf";
 import { resolveAccount } from "../../middleware/tenantScope.js";
+import { prisma } from "../../lib/db.js";
 import * as invoicesRepo from "./repository.js";
 
 // Follows the reference pattern in ../customers/router.ts (brief §7.2).
@@ -73,6 +75,54 @@ invoicesRouter.post("/:id/mark-paid", async (req, res) => {
     return;
   }
   res.json(invoice);
+});
+
+// Rendered on demand rather than pre-generated and stored — cheap at this
+// scale, and sidesteps needing a file-storage decision (S3/R2 credentials)
+// before that's actually forced by the send/email checkpoint next. Once
+// that lands, this becomes the fallback for a missing/stale pdfUrl rather
+// than the only path.
+invoicesRouter.get("/:id/pdf", async (req, res) => {
+  const invoice = await invoicesRepo.findById(req.accountId!, req.params.id);
+  if (!invoice) {
+    res.status(404).json({ error: "Invoice not found" });
+    return;
+  }
+  const account = await prisma.account.findUniqueOrThrow({ where: { id: req.accountId! } });
+
+  const buffer = await renderInvoicePdf({
+    business: {
+      name: account.businessName,
+      addressLine1: account.addressLine1,
+      addressLine2: account.addressLine2,
+      city: account.city,
+      postcode: account.postcode,
+      email: account.contactEmail,
+      bankAccountName: account.bankAccountName,
+      bankSortCode: account.bankSortCode,
+      bankAccountNumber: account.bankAccountNumber,
+    },
+    customer: invoice.customer,
+    invoiceNumber: invoice.invoiceNumber,
+    issueDate: invoice.issueDate,
+    dueDate: invoice.dueDate,
+    lineItems: invoice.lineItems.map((li) => ({
+      description: li.description,
+      type: li.type,
+      quantity: Number(li.quantity),
+      unitPrice: Number(li.unitPrice),
+      lineTotal: Number(li.lineTotal),
+    })),
+    subtotal: Number(invoice.subtotal),
+    taxRate: Number(invoice.taxRate),
+    taxAmount: Number(invoice.taxAmount),
+    total: Number(invoice.total),
+    notesToCustomer: invoice.notesToCustomer,
+  });
+
+  res.setHeader("Content-Type", "application/pdf");
+  res.setHeader("Content-Disposition", `inline; filename="${invoice.invoiceNumber}.pdf"`);
+  res.send(buffer);
 });
 
 invoicesRouter.post("/:id/void", async (req, res) => {

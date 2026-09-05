@@ -16,6 +16,7 @@
     "@clerk/backend": "^1.21.0",
     "@trade-platform/db": "workspace:*",
     "@trade-platform/invoice-engine": "workspace:*",
+    "@trade-platform/pdf": "workspace:*",
     "@trade-platform/shared-types": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
