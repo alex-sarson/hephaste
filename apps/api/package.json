@@ -22,6 +22,7 @@
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
     "express-async-errors": "^3.1.1",
+    "svix": "^1.62.0",
     "zod": "^3.24.0"
   },
   "devDependencies": {

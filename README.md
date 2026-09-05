@@ -35,7 +35,7 @@ infra/
 Requires Node 22+, pnpm (`corepack enable`), and Docker.
 
 ```bash
-cp .env.example .env          # fill in Clerk/Postmark keys as you get them
+cp .env.example .env          # fill in Clerk/Resend keys as you get them
 docker compose -f infra/docker-compose.yml up -d
 pnpm install
 pnpm db:migrate                # applies the Prisma schema
