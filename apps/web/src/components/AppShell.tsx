@@ -5,6 +5,7 @@ import type { ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { UserButton } from "@clerk/clerk-react";
 import { isDevAuth } from "../auth/context.js";
+import { useTerminology } from "../account/context.js";
 import {
   BrandMark,
   CustomersIcon,
@@ -14,15 +15,16 @@ import {
   SettingsIcon,
 } from "./icons.js";
 
-const NAV_ITEMS = [
-  { to: "/", label: "Dashboard", icon: DashboardIcon },
-  { to: "/jobs", label: "Jobs", icon: JobsIcon },
-  { to: "/invoices", label: "Invoices", icon: InvoicesIcon },
-  { to: "/customers", label: "Customers", icon: CustomersIcon },
-];
-
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
+  const terminology = useTerminology();
+
+  const navItems = [
+    { to: "/", label: "Dashboard", icon: DashboardIcon },
+    { to: "/jobs", label: terminology.job.plural, icon: JobsIcon },
+    { to: "/invoices", label: "Invoices", icon: InvoicesIcon },
+    { to: "/customers", label: terminology.customer.plural, icon: CustomersIcon },
+  ];
 
   return (
     <div style={{ display: "flex", minHeight: "100%", background: "var(--bg)" }}>
@@ -65,7 +67,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           </div>
         </div>
 
-        {NAV_ITEMS.map(({ to, label, icon: Icon }) => {
+        {navItems.map(({ to, label, icon: Icon }) => {
           const active = location.pathname === to;
           return (
             <Link key={to} to={to} className={`navlink${active ? " active" : ""}`}>

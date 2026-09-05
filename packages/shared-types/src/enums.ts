@@ -38,3 +38,11 @@ export type EmailEventType = z.infer<typeof emailEventTypeSchema>;
 
 export const adminRoleSchema = z.enum(["SUPPORT", "BILLING_OPS", "SUPERADMIN"]);
 export type AdminRole = z.infer<typeof adminRoleSchema>;
+
+// Unlike the enums above, `Account.industry` is stored as a plain string in
+// the database (see packages/db/prisma/schema.prisma), not a Postgres enum —
+// this schema is the single source of truth for which values are valid.
+// Adding a new industry later is a one-line addition here plus a matching
+// entry in INDUSTRY_PRESETS (./account.js) — no database migration.
+export const industrySchema = z.enum(["TRADES", "BEAUTY", "ARTS", "OTHER"]);
+export type Industry = z.infer<typeof industrySchema>;

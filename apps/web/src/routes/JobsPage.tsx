@@ -4,6 +4,7 @@
 // visual only until then.
 import { useState } from "react";
 import type { JobStatus } from "@trade-platform/shared-types";
+import { useTerminology } from "../account/context.js";
 import { PageHeader } from "../components/PageHeader.js";
 import { JobStatusBadge } from "../components/StatusBadge.js";
 import { ChevronRightIcon, PlusIcon, SearchIcon } from "../components/icons.js";
@@ -36,18 +37,19 @@ const JOBS: JobRow[] = [
 ];
 
 export function JobsPage() {
+  const terminology = useTerminology();
   const [filter, setFilter] = useState<JobStatus | "ALL">("ALL");
   const visibleJobs = filter === "ALL" ? JOBS : JOBS.filter((j) => j.status === filter);
 
   return (
     <div>
       <PageHeader
-        title="Jobs"
-        subtitle="Track every job from quote to invoice."
+        title={terminology.job.plural}
+        subtitle={`Track every ${terminology.job.singular.toLowerCase()} from start to invoice.`}
         action={
           <button className="btn-primary">
             <PlusIcon />
-            New job
+            New {terminology.job.singular.toLowerCase()}
           </button>
         }
       />
@@ -55,7 +57,7 @@ export function JobsPage() {
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
         <div className="input" style={{ width: 280 }}>
           <SearchIcon style={{ color: "var(--text-faint)" }} />
-          <input placeholder="Search jobs or customers" />
+          <input placeholder={`Search ${terminology.job.plural.toLowerCase()} or ${terminology.customer.plural.toLowerCase()}`} />
         </div>
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
           {FILTERS.map((f) => (
@@ -85,7 +87,7 @@ export function JobsPage() {
             letterSpacing: "0.03em",
           }}
         >
-          <div>Job</div>
+          <div>{terminology.job.singular}</div>
           <div>Status</div>
           <div>Scheduled</div>
           <div>Site address</div>
@@ -94,7 +96,7 @@ export function JobsPage() {
 
         {visibleJobs.length === 0 && (
           <div style={{ padding: "24px 4px", fontSize: 13, color: "var(--text-faint)" }}>
-            No jobs match this filter.
+            No {terminology.job.plural.toLowerCase()} match this filter.
           </div>
         )}
 
