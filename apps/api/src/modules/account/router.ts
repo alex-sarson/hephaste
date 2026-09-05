@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { onboardingRequestSchema } from "@trade-platform/shared-types";
+import { onboardingRequestSchema, updateAccountProfileSchema } from "@trade-platform/shared-types";
 import { resolveAccount } from "../../middleware/tenantScope.js";
 import { prisma } from "../../lib/db.js";
 
@@ -35,6 +35,15 @@ accountRouter.patch("/me/terminology", async (req, res) => {
   res.json(account);
 });
 
-// TODO (Phase 1): PATCH /me — company profile update (business details, logo,
-// bank details, default tax rate, invoice numbering prefix). Validate with a
-// schema from @trade-platform/shared-types once defined.
+// Company profile / invoicing defaults (brief §6 — "account/company
+// profile setup" is the first MVP feature). Logo upload isn't handled
+// here — it needs a file-storage decision, unlike everything else in
+// updateAccountProfileSchema, which is plain text fields.
+accountRouter.patch("/me", async (req, res) => {
+  const input = updateAccountProfileSchema.parse(req.body);
+  const account = await prisma.account.update({
+    where: { id: req.accountId! },
+    data: input,
+  });
+  res.json(account);
+});
