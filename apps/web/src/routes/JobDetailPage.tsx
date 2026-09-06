@@ -105,6 +105,11 @@ export function JobDetailPage() {
 
   const [uploadingAttachment, setUploadingAttachment] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  // Signed thumbnail URLs, keyed by attachment id — fetched lazily below
+  // rather than included on the job payload itself, since most attachment
+  // rows (a PDF, say) never need one.
+  const [imageUrls, setImageUrls] = useState<Record<string, string>>({});
+  const fetchedImageIds = useRef<Set<string>>(new Set());
 
   // Re-fetches the job and repopulates every form field from it — only
   // right for the initial load. Calling this after a side action (status
@@ -150,6 +155,32 @@ export function JobDetailPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // Fetches a signed thumbnail URL for each image attachment not already
+  // fetched. Tracked via a ref (not the imageUrls state itself) so this
+  // doesn't re-run every time a URL comes back — only when the attachment
+  // list actually changes.
+  useEffect(() => {
+    if (!job) return;
+    const toFetch = job.attachments.filter(
+      (a) => a.fileType.startsWith("image/") && !fetchedImageIds.current.has(a.id),
+    );
+    if (toFetch.length === 0) return;
+    toFetch.forEach((a) => fetchedImageIds.current.add(a.id));
+
+    (async () => {
+      const token = await getToken();
+      if (!token) return;
+      for (const a of toFetch) {
+        try {
+          const { url } = await getJobAttachmentUrl(token, job.id, a.id);
+          setImageUrls((prev) => ({ ...prev, [a.id]: url }));
+        } catch {
+          // Leave it unfetched — the row falls back to the file icon.
+        }
+      }
+    })();
+  }, [job, getToken]);
 
   if (error && !job) {
     return <div style={{ fontSize: 13, color: "var(--red-text)" }}>{error}</div>;
@@ -538,9 +569,34 @@ export function JobDetailPage() {
 
             {job.attachments.map((a) => (
               <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
-                <span style={{ color: "var(--text-faint)", flexShrink: 0 }}>
-                  <FileIcon />
-                </span>
+                {a.fileType.startsWith("image/") && imageUrls[a.id] ? (
+                  <img
+                    src={imageUrls[a.id]}
+                    alt=""
+                    style={{
+                      width: 36,
+                      height: 36,
+                      objectFit: "cover",
+                      borderRadius: 6,
+                      border: "1px solid var(--border-soft)",
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : (
+                  <span
+                    style={{
+                      width: 36,
+                      height: 36,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      color: "var(--text-faint)",
+                      flexShrink: 0,
+                    }}
+                  >
+                    <FileIcon />
+                  </span>
+                )}
                 <button
                   type="button"
                   onClick={() => handleDownloadAttachment(a.id)}
