@@ -3,7 +3,7 @@
 // (design/Invoices.dc.html) mocked the detail screen instead — see
 // InvoiceDetailPage, which follows that layout.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { InvoiceStatus } from "@trade-platform/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
@@ -13,14 +13,33 @@ import { PageHeader } from "../components/PageHeader.js";
 import { InvoiceStatusBadge } from "../components/StatusBadge.js";
 import { ChevronRightIcon, PlusIcon, SearchIcon } from "../components/icons.js";
 
-const FILTERS: Array<{ label: string; status: InvoiceStatus | "ALL" | "OVERDUE" }> = [
+// OUTSTANDING and PAID_THIS_MONTH aren't Invoice.status values — they're
+// the same combined definitions DashboardPage's stat tiles use (see
+// apps/api/src/modules/dashboard/repository.ts's OPEN_INVOICE_STATUSES and
+// paidThisMonth window), duplicated here as client-side predicates rather
+// than fetched, since this page already has every invoice loaded. Kept in
+// sync with the ?filter= query param the dashboard tiles link to.
+type InvoiceFilter = InvoiceStatus | "ALL" | "OUTSTANDING" | "OVERDUE" | "PAID_THIS_MONTH";
+
+const FILTERS: Array<{ label: string; status: InvoiceFilter }> = [
   { label: "All", status: "ALL" },
   { label: "Draft", status: "DRAFT" },
   { label: "Sent", status: "SENT" },
   { label: "Viewed", status: "VIEWED" },
+  { label: "Outstanding", status: "OUTSTANDING" },
   { label: "Overdue", status: "OVERDUE" },
+  { label: "Paid this month", status: "PAID_THIS_MONTH" },
   { label: "Paid", status: "PAID" },
 ];
+
+const VALID_FILTERS = new Set(FILTERS.map((f) => f.status));
+
+function isPaidThisMonth(invoice: Invoice): boolean {
+  if (invoice.status !== "PAID" || !invoice.paidAt) return false;
+  const paid = new Date(invoice.paidAt);
+  const now = new Date();
+  return paid.getFullYear() === now.getFullYear() && paid.getMonth() === now.getMonth();
+}
 
 function money(amount: string): string {
   return `£${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -35,10 +54,17 @@ export function InvoicesPage() {
   const { getToken } = useAuthToken();
   const terminology = useTerminology();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[] | null>(null);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<InvoiceStatus | "ALL" | "OVERDUE">("ALL");
+  // Seeded from ?filter= (e.g. the dashboard's stat tiles link to
+  // /invoices?filter=OUTSTANDING etc.) — falls back to ALL for a bare
+  // /invoices visit or an unrecognized value.
+  const [filter, setFilter] = useState<InvoiceFilter>(() => {
+    const fromUrl = searchParams.get("filter");
+    return fromUrl && VALID_FILTERS.has(fromUrl as InvoiceFilter) ? (fromUrl as InvoiceFilter) : "ALL";
+  });
 
   const [showForm, setShowForm] = useState(false);
   const [jobId, setJobId] = useState("");
@@ -77,7 +103,9 @@ export function InvoicesPage() {
 
   const visible = (invoices ?? []).filter((inv) => {
     if (filter === "ALL") return true;
+    if (filter === "OUTSTANDING") return inv.status === "SENT" || inv.status === "VIEWED";
     if (filter === "OVERDUE") return inv.overdue;
+    if (filter === "PAID_THIS_MONTH") return isPaidThisMonth(inv);
     return inv.status === filter;
   });
 

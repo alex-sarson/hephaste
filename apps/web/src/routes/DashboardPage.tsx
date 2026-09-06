@@ -44,12 +44,17 @@ interface StatCardProps {
   sublabel: string;
   icon: ComponentType;
   tone?: "default" | "red" | "green";
+  onClick?: () => void;
 }
 
-function StatCard({ label, value, sublabel, icon: Icon, tone = "default" }: StatCardProps) {
+function StatCard({ label, value, sublabel, icon: Icon, tone = "default", onClick }: StatCardProps) {
   const toneColor = tone === "red" ? "var(--red-text)" : tone === "green" ? "var(--green-text)" : undefined;
   return (
-    <div className="card" style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10 }}>
+    <div
+      className="card"
+      onClick={onClick}
+      style={{ padding: "18px 20px", display: "flex", flexDirection: "column", gap: 10, cursor: onClick ? "pointer" : undefined }}
+    >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
         <div
           style={{
@@ -140,6 +145,7 @@ export function DashboardPage() {
           value={formatMoney(summary.outstanding.total)}
           sublabel={`across ${summary.outstanding.count} invoice${summary.outstanding.count === 1 ? "" : "s"}`}
           icon={WalletIcon}
+          onClick={() => navigate("/invoices?filter=OUTSTANDING")}
         />
         <StatCard
           label="Overdue"
@@ -147,12 +153,14 @@ export function DashboardPage() {
           sublabel={`${summary.overdue.count} invoice${summary.overdue.count === 1 ? "" : "s"} need${summary.overdue.count === 1 ? "s" : ""} chasing`}
           icon={WarningIcon}
           tone={summary.overdue.count > 0 ? "red" : "default"}
+          onClick={() => navigate("/invoices?filter=OVERDUE")}
         />
         <StatCard
           label={`Upcoming ${terminology.job.plural.toLowerCase()}`}
           value={String(summary.upcomingJobsCount)}
           sublabel="in the next 7 days"
           icon={CalendarIcon}
+          onClick={() => navigate("/jobs?filter=UPCOMING")}
         />
         <StatCard
           label="Paid this month"
@@ -160,6 +168,7 @@ export function DashboardPage() {
           sublabel={`${summary.paidThisMonth.count} invoice${summary.paidThisMonth.count === 1 ? "" : "s"} settled`}
           icon={CheckCircleIcon}
           tone="green"
+          onClick={() => navigate("/invoices?filter=PAID_THIS_MONTH")}
         />
       </div>
 

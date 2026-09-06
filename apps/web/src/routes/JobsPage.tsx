@@ -2,7 +2,7 @@
 // §13, build order item 3) the same way CustomersPage is wired to
 // customers — see apps/api/src/modules/jobs.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import type { JobLocationType, JobStatus } from "@trade-platform/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
@@ -12,14 +12,33 @@ import { PageHeader } from "../components/PageHeader.js";
 import { JobStatusBadge } from "../components/StatusBadge.js";
 import { ChevronRightIcon, PlusIcon, SearchIcon } from "../components/icons.js";
 
-const FILTERS: Array<{ label: string; status: JobStatus | "ALL" }> = [
+// "Upcoming" isn't a status — it's the same scheduled-in-the-next-7-days
+// definition DashboardPage's "Upcoming {jobs}" tile uses (see
+// apps/api/src/modules/dashboard/repository.ts's ACTIVE_JOB_STATUSES +
+// 7-day window), duplicated here rather than fetched, since it's a pure
+// client-side predicate over data this page already has. Kept in sync with
+// the ?filter= query param the dashboard tile links to (see JobFilter).
+type JobFilter = JobStatus | "ALL" | "UPCOMING";
+
+const FILTERS: Array<{ label: string; status: JobFilter }> = [
   { label: "All", status: "ALL" },
   { label: "Quoted", status: "QUOTED" },
   { label: "Scheduled", status: "SCHEDULED" },
   { label: "In progress", status: "IN_PROGRESS" },
+  { label: "Upcoming (7 days)", status: "UPCOMING" },
   { label: "Complete", status: "COMPLETE" },
   { label: "Cancelled", status: "CANCELLED" },
 ];
+
+const VALID_FILTERS = new Set(FILTERS.map((f) => f.status));
+
+function isUpcoming(job: Job): boolean {
+  if (job.status !== "SCHEDULED" && job.status !== "IN_PROGRESS") return false;
+  if (!job.scheduledStart) return false;
+  const start = new Date(job.scheduledStart).getTime();
+  const now = Date.now();
+  return start >= now && start < now + 7 * 86_400_000;
+}
 
 function formatScheduled(job: Job): string {
   if (!job.scheduledStart) return "—";
@@ -46,10 +65,17 @@ export function JobsPage() {
   const { getToken } = useAuthToken();
   const navigate = useNavigate();
   const terminology = useTerminology();
+  const [searchParams] = useSearchParams();
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [error, setError] = useState<string | null>(null);
-  const [filter, setFilter] = useState<JobStatus | "ALL">("ALL");
+  // Seeded from ?filter= (e.g. the dashboard's "Upcoming jobs" tile links
+  // to /jobs?filter=UPCOMING) — falls back to ALL for a bare /jobs visit or
+  // an unrecognized value.
+  const [filter, setFilter] = useState<JobFilter>(() => {
+    const fromUrl = searchParams.get("filter");
+    return fromUrl && VALID_FILTERS.has(fromUrl as JobFilter) ? (fromUrl as JobFilter) : "ALL";
+  });
 
   const [showForm, setShowForm] = useState(false);
   const [title, setTitle] = useState("");
@@ -91,7 +117,11 @@ export function JobsPage() {
     }
   }
 
-  const visibleJobs = (jobs ?? []).filter((j) => filter === "ALL" || j.status === filter);
+  const visibleJobs = (jobs ?? []).filter((j) => {
+    if (filter === "ALL") return true;
+    if (filter === "UPCOMING") return isUpcoming(j);
+    return j.status === filter;
+  });
 
   return (
     <div>
