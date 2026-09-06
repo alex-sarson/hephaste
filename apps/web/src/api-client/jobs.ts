@@ -6,7 +6,7 @@ import type {
   JobStatus,
   UpdateJobInput,
 } from "@hephaste/shared-types";
-import { request } from "./client.js";
+import { API_BASE_URL, request } from "./client.js";
 
 export interface Job {
   id: string;
@@ -35,6 +35,14 @@ export interface JobMaterial {
   createdAt: string;
 }
 
+export interface Attachment {
+  id: string;
+  originalFilename: string;
+  fileType: string;
+  fileSizeBytes: number;
+  uploadedAt: string;
+}
+
 // Only the single-job fetch (GET /:id) includes materials/invoices and the
 // customer's full contact details — the list endpoint only joins
 // {id, name}, so this is a separate type rather than widening Job with
@@ -51,6 +59,7 @@ export interface JobDetail extends Omit<Job, "customer"> {
     postcode: string | null;
   };
   materials: JobMaterial[];
+  attachments: Attachment[];
   invoices: { id: string; invoiceNumber: string; status: InvoiceStatus }[];
 }
 
@@ -96,6 +105,43 @@ export function addJobMaterial(token: string, jobId: string, input: CreateJobMat
 
 export function removeJobMaterial(token: string, jobId: string, materialId: string) {
   return request<void>(`/api/jobs/${jobId}/materials/${materialId}`, {
+    method: "DELETE",
+    token,
+  });
+}
+
+// Doesn't go through request() — that helper always sends
+// Content-Type: application/json and JSON.stringifies the body, which
+// would break a multipart upload (the browser needs to set its own
+// Content-Type with the multipart boundary, computed from the FormData).
+export async function uploadJobAttachment(token: string, jobId: string, file: File): Promise<Attachment> {
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${API_BASE_URL}/api/jobs/${jobId}/attachments`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+    body: formData,
+  });
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}));
+    throw new Error(body.error ?? `Request failed: ${res.status}`);
+  }
+  return res.json() as Promise<Attachment>;
+}
+
+// Attachments are stored privately, so viewing/downloading one is a
+// two-step fetch: get a short-lived signed URL from the API, then let the
+// browser navigate to it directly (the API server itself never proxies the
+// file bytes).
+export function getJobAttachmentUrl(token: string, jobId: string, attachmentId: string) {
+  return request<{ url: string }>(`/api/jobs/${jobId}/attachments/${attachmentId}/url`, {
+    method: "GET",
+    token,
+  });
+}
+
+export function removeJobAttachment(token: string, jobId: string, attachmentId: string) {
+  return request<void>(`/api/jobs/${jobId}/attachments/${attachmentId}`, {
     method: "DELETE",
     token,
   });

@@ -52,7 +52,16 @@ export async function getSummary(accountId: string) {
       take: 5,
     }),
     prisma.job.findMany({
-      where: { accountId, deletedAt: null, status: { in: ACTIVE_JOB_STATUSES }, scheduledStart: { gte: now } },
+      // Same 7-day window as upcomingJobsCount below — without the upper
+      // bound, a job scheduled further out (but still earliest-first) could
+      // fill all 5 list slots and crowd out one due sooner than 7 days,
+      // even though the count would still be accurate.
+      where: {
+        accountId,
+        deletedAt: null,
+        status: { in: ACTIVE_JOB_STATUSES },
+        scheduledStart: { gte: now, lt: sevenDaysFromNow },
+      },
       select: { id: true, title: true, scheduledStart: true, customer: { select: { name: true } } },
       orderBy: { scheduledStart: "asc" },
       take: 5,

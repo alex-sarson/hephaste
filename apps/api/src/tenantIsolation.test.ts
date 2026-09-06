@@ -13,12 +13,23 @@ import "./env.js";
 import "express-async-errors";
 import express from "express";
 import request from "supertest";
-import { beforeAll, describe, expect, it } from "vitest";
+import { beforeAll, describe, expect, it, vi } from "vitest";
+import { errorHandler } from "./middleware/errorHandler.js";
+import { DEV_ACCOUNT_AUTH_ID, DEV_ACCOUNT_AUTH_ID_2, ensureDevAccount } from "./lib/devAuth.js";
+
+// jobsRouter's attachments routes call out to S3 — mocked so this suite
+// never makes a real network call (see modules/jobs/router.test.ts).
+vi.mock("./lib/storage.js", () => ({
+  buildAttachmentKey: (accountId: string, jobId: string, originalFilename: string) =>
+    `attachments/${accountId}/${jobId}/mock-${originalFilename}`,
+  uploadObject: vi.fn(async () => {}),
+  deleteObject: vi.fn(async () => {}),
+  getDownloadUrl: vi.fn(async (key: string) => `https://mock-bucket.example/${key}?signed=1`),
+}));
+
 import { customersRouter } from "./modules/customers/router.js";
 import { jobsRouter } from "./modules/jobs/router.js";
 import { invoicesRouter } from "./modules/invoices/router.js";
-import { errorHandler } from "./middleware/errorHandler.js";
-import { DEV_ACCOUNT_AUTH_ID, DEV_ACCOUNT_AUTH_ID_2, ensureDevAccount } from "./lib/devAuth.js";
 
 const app = express();
 app.use(express.json());
@@ -69,6 +80,24 @@ describe("cross-tenant isolation", () => {
       (await asB.post(`/api/jobs/${jobA.body.id}/materials`).send({ description: "x", quantity: 1, unitCost: 1 })).status,
     ).toBe(404);
     expect((await asB.delete(`/api/jobs/${jobA.body.id}`)).status).toBe(404);
+  });
+
+  it("blocks uploading to, downloading from, and deleting another tenant's job attachment", async () => {
+    const customerA = await request(app).post("/api/customers").send({ name: "A's customer (attachment test)" });
+    const jobA = await request(app).post("/api/jobs").send({ customerId: customerA.body.id, title: "A's job with a photo" });
+    const attachmentA = await request(app)
+      .post(`/api/jobs/${jobA.body.id}/attachments`)
+      .attach("file", Buffer.from("a"), { filename: "a.png", contentType: "image/png" });
+
+    expect(
+      (
+        await asB
+          .post(`/api/jobs/${jobA.body.id}/attachments`)
+          .attach("file", Buffer.from("b"), { filename: "b.png", contentType: "image/png" })
+      ).status,
+    ).toBe(404);
+    expect((await asB.get(`/api/jobs/${jobA.body.id}/attachments/${attachmentA.body.id}/url`)).status).toBe(404);
+    expect((await asB.delete(`/api/jobs/${jobA.body.id}/attachments/${attachmentA.body.id}`)).status).toBe(404);
   });
 
   it("blocks reading, updating, sending, voiding, and downloading another tenant's invoice", async () => {
