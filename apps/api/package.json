@@ -13,6 +13,8 @@
     "test": "vitest run --passWithNoTests"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1127.0",
+    "@aws-sdk/s3-request-presigner": "^3.1127.0",
     "@clerk/backend": "^1.21.0",
     "@hephaste/db": "workspace:*",
     "@hephaste/email-templates": "workspace:^",
@@ -23,6 +25,7 @@
     "dotenv": "^16.4.0",
     "express": "^4.21.0",
     "express-async-errors": "^3.1.1",
+    "multer": "^2.3.0",
     "resend": "^6.26.0",
     "svix": "^1.62.0",
     "zod": "^3.24.0"
@@ -30,6 +33,7 @@
   "devDependencies": {
     "@types/cors": "^2.8.17",
     "@types/express": "^5.0.0",
+    "@types/multer": "^2.2.0",
     "@types/node": "^22.10.0",
     "@types/supertest": "^6.0.2",
     "supertest": "^7.0.0",

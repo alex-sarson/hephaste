@@ -12,22 +12,31 @@
 // status can be set from any other, matched here with a plain dropdown
 // rather than a "next step" button that would imply an ordering the
 // backend doesn't actually enforce.
-import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { JobLocationType, JobStatus } from "@hephaste/shared-types";
+import {
+  ALLOWED_ATTACHMENT_MIME_TYPES,
+  MAX_ATTACHMENT_SIZE_BYTES,
+  isAllowedAttachmentMimeType,
+  type JobLocationType,
+  type JobStatus,
+} from "@hephaste/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
 import {
   addJobMaterial,
   getJob,
+  getJobAttachmentUrl,
+  removeJobAttachment,
   removeJobMaterial,
   updateJob,
   updateJobStatus,
+  uploadJobAttachment,
   type JobDetail,
 } from "../api-client/jobs.js";
 import { createInvoice } from "../api-client/invoices.js";
 import { JobStatusBadge, InvoiceStatusBadge } from "../components/StatusBadge.js";
-import { PlusIcon } from "../components/icons.js";
+import { FileIcon, PlusIcon } from "../components/icons.js";
 
 const STATUS_OPTIONS: JobStatus[] = ["QUOTED", "SCHEDULED", "IN_PROGRESS", "COMPLETE", "CANCELLED"];
 const STATUS_LABEL: Record<JobStatus, string> = {
@@ -47,6 +56,12 @@ const LOCATION_LABEL: Record<JobLocationType, string> = {
 
 function money(amount: number | string): string {
   return `£${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
 // <input type="datetime-local"> wants "YYYY-MM-DDTHH:mm" in local time, not
@@ -87,6 +102,9 @@ export function JobDetailPage() {
   const [materialQuantity, setMaterialQuantity] = useState("1");
   const [materialUnitCost, setMaterialUnitCost] = useState("");
   const [addingMaterial, setAddingMaterial] = useState(false);
+
+  const [uploadingAttachment, setUploadingAttachment] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Re-fetches the job and repopulates every form field from it — only
   // right for the initial load. Calling this after a side action (status
@@ -215,6 +233,60 @@ export function JobDetailPage() {
       const token = await getToken();
       if (!token) throw new Error("Not signed in");
       await removeJobMaterial(token, job!.id, materialId);
+      await refreshJobOnly();
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function handleFileSelected(e: FormEvent<HTMLInputElement>) {
+    const file = e.currentTarget.files?.[0];
+    e.currentTarget.value = ""; // allow re-selecting the same file later
+    if (!file) return;
+
+    // Same limits the API enforces — checked here first so a user finds out
+    // immediately rather than after a full upload.
+    if (!isAllowedAttachmentMimeType(file.type)) {
+      setError(`Unsupported file type: ${file.type || "unknown"}`);
+      return;
+    }
+    if (file.size > MAX_ATTACHMENT_SIZE_BYTES) {
+      setError(`File too large — max ${MAX_ATTACHMENT_SIZE_BYTES / (1024 * 1024)}MB`);
+      return;
+    }
+
+    setUploadingAttachment(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      await uploadJobAttachment(token, job!.id, file);
+      await refreshJobOnly();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setUploadingAttachment(false);
+    }
+  }
+
+  async function handleDownloadAttachment(attachmentId: string) {
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      const { url } = await getJobAttachmentUrl(token, job!.id, attachmentId);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }
+
+  async function handleRemoveAttachment(attachmentId: string) {
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      await removeJobAttachment(token, job!.id, attachmentId);
       await refreshJobOnly();
     } catch (err) {
       setError((err as Error).message);
@@ -455,6 +527,69 @@ export function JobDetailPage() {
                 Add {terminology.asset.singular.toLowerCase()}
               </button>
             </form>
+          </div>
+
+          <div className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 14 }}>
+            <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 14 }}>Photos & files</div>
+
+            {job.attachments.length === 0 && (
+              <div style={{ fontSize: 12.5, color: "var(--text-faint)" }}>No photos or files uploaded yet.</div>
+            )}
+
+            {job.attachments.map((a) => (
+              <div key={a.id} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}>
+                <span style={{ color: "var(--text-faint)", flexShrink: 0 }}>
+                  <FileIcon />
+                </span>
+                <button
+                  type="button"
+                  onClick={() => handleDownloadAttachment(a.id)}
+                  title="Download"
+                  style={{
+                    flex: 1,
+                    minWidth: 0,
+                    textAlign: "left",
+                    background: "none",
+                    border: "none",
+                    padding: 0,
+                    cursor: "pointer",
+                    color: "var(--text)",
+                  }}
+                >
+                  <div style={{ fontWeight: 600, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                    {a.originalFilename}
+                  </div>
+                  <div style={{ color: "var(--text-muted)" }}>{formatFileSize(a.fileSizeBytes)}</div>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveAttachment(a.id)}
+                  style={{ background: "none", border: "none", color: "var(--text-faint)", cursor: "pointer", fontSize: 16, lineHeight: 1, flexShrink: 0 }}
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+
+            <div style={{ paddingTop: job.attachments.length > 0 ? 8 : 0, borderTop: job.attachments.length > 0 ? "1px solid var(--border-soft)" : "none" }}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept={ALLOWED_ATTACHMENT_MIME_TYPES.join(",")}
+                onChange={handleFileSelected}
+                style={{ display: "none" }}
+              />
+              <button
+                type="button"
+                className="btn-secondary"
+                disabled={uploadingAttachment}
+                onClick={() => fileInputRef.current?.click()}
+                style={{ height: 32, padding: "0 12px", fontSize: 12.5 }}
+              >
+                <PlusIcon />
+                {uploadingAttachment ? "Uploading…" : "Add photo or file"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

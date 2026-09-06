@@ -265,9 +265,10 @@ model Attachment {
   jobId     String @map("job_id")
   accountId String @map("account_id")
 
-  fileUrl       String @map("file_url") // S3/R2 object key
-  fileType      String @map("file_type")
-  fileSizeBytes Int    @map("file_size_bytes")
+  fileUrl          String @map("file_url") // S3/R2 object key — random, not derived from the filename below
+  originalFilename String @map("original_filename") // display-only; never used to build fileUrl (avoids collisions/path traversal)
+  fileType         String @map("file_type")
+  fileSizeBytes    Int    @map("file_size_bytes")
 
   uploadedAt DateTime @default(now()) @map("uploaded_at")
 
