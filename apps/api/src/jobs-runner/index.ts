@@ -46,6 +46,34 @@ export async function detectOverdue() {
   }
 }
 
+const OVERDUE_SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Keeps a daily DETECT_OVERDUE job flowing through the same BackgroundJob
+ * queue detectOverdue()'s caller (runJob) already knows how to run — see
+ * brief §10.2, previously "not wired here yet" (no hosting platform is
+ * chosen — docs/PROJECT_PLAN.md §12 — so there's no native cron to hit yet
+ * either).
+ *
+ * Deliberately DB-state-driven (checks the last DETECT_OVERDUE row's
+ * createdAt/status) rather than an in-memory timer, so this stays correct
+ * across a process restart (tsx watch, a redeploy) or multiple runner
+ * instances without double-enqueuing — nothing here needs to change on the
+ * day a real platform cron replaces this loop with a trigger endpoint call
+ * instead. Not account-scoped (BackgroundJob.accountId is nullable exactly
+ * for this — see schema.prisma), since detectOverdue() itself sweeps every
+ * account in one query.
+ */
+export async function maybeScheduleOverdueSweep() {
+  const last = await prisma.backgroundJob.findFirst({
+    where: { type: "DETECT_OVERDUE" },
+    orderBy: { createdAt: "desc" },
+  });
+  if (last && (last.status === "PENDING" || last.status === "RUNNING")) return;
+  if (last && Date.now() - last.createdAt.getTime() < OVERDUE_SWEEP_INTERVAL_MS) return;
+  await prisma.backgroundJob.create({ data: { type: "DETECT_OVERDUE", payload: {} } });
+}
+
 /**
  * The slow/failure-prone half of "sending" an invoice (brief §9): render
  * the PDF and hand it to an email provider. The DRAFT -> SENT transition
@@ -210,16 +238,13 @@ async function runJob(job: { id: string; type: string; payload: unknown }) {
 }
 
 async function pollLoop() {
+  await maybeScheduleOverdueSweep();
   const job = await claimNextJob();
   if (job) {
     await runJob(job);
   }
   setTimeout(pollLoop, POLL_INTERVAL_MS);
 }
-
-// The daily overdue sweep is enqueued via the hosting platform's native
-// cron (brief §10.2) hitting a small trigger endpoint or invoked directly
-// on a schedule — not wired here yet.
 
 // Only start polling when this file is run as the actual entrypoint, not
 // when its exported functions are imported directly (e.g. by
