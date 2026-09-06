@@ -88,6 +88,11 @@ export function JobDetailPage() {
   const [materialUnitCost, setMaterialUnitCost] = useState("");
   const [addingMaterial, setAddingMaterial] = useState(false);
 
+  // Re-fetches the job and repopulates every form field from it — only
+  // right for the initial load. Calling this after a side action (status
+  // change, add/remove material) would blow away whatever the user is
+  // mid-typing in the details form below, which is exactly the bug this
+  // split avoids — see refreshJobOnly.
   const refresh = useCallback(async () => {
     if (!id) return;
     try {
@@ -105,6 +110,20 @@ export function JobDetailPage() {
       setCity(j.city ?? "");
       setPostcode(j.postcode ?? "");
       setNotes(j.notes ?? "");
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }, [id, getToken]);
+
+  // Updates job (status badge, materials list, invoices list) without
+  // touching the details form's own state — used after any action that
+  // isn't the details form's own Save, so unsaved edits there survive.
+  const refreshJobOnly = useCallback(async () => {
+    if (!id) return;
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      setJob(await getJob(token, id));
     } catch (err) {
       setError((err as Error).message);
     }
@@ -159,7 +178,7 @@ export function JobDetailPage() {
       const token = await getToken();
       if (!token) throw new Error("Not signed in");
       await updateJobStatus(token, job!.id, status);
-      await refresh();
+      await refreshJobOnly();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -182,7 +201,7 @@ export function JobDetailPage() {
       setMaterialDescription("");
       setMaterialQuantity("1");
       setMaterialUnitCost("");
-      await refresh();
+      await refreshJobOnly();
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -196,7 +215,7 @@ export function JobDetailPage() {
       const token = await getToken();
       if (!token) throw new Error("Not signed in");
       await removeJobMaterial(token, job!.id, materialId);
-      await refresh();
+      await refreshJobOnly();
     } catch (err) {
       setError((err as Error).message);
     }
