@@ -6,6 +6,7 @@ import { AppShell } from "./components/AppShell.js";
 import { BrandMark } from "./components/icons.js";
 import { DashboardPage } from "./routes/DashboardPage.js";
 import { JobsPage } from "./routes/JobsPage.js";
+import { JobDetailPage } from "./routes/JobDetailPage.js";
 import { InvoicesPage } from "./routes/InvoicesPage.js";
 import { InvoiceDetailPage } from "./routes/InvoiceDetailPage.js";
 import { CustomersPage } from "./routes/CustomersPage.js";
@@ -71,6 +72,7 @@ export function App() {
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:id" element={<JobDetailPage />} />
             <Route path="/invoices" element={<InvoicesPage />} />
             <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="/customers" element={<CustomersPage />} />
