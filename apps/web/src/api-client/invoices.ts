@@ -1,4 +1,5 @@
 import type {
+  EmailSendStatus,
   InvoiceLineItemInput,
   InvoiceStatus,
   LineItemType,
@@ -49,12 +50,25 @@ export interface Invoice {
   statusEvents: InvoiceStatusEvent[];
 }
 
+export interface EmailSendInfo {
+  status: EmailSendStatus;
+  lastError: string | null;
+  updatedAt: string;
+}
+
+// Only the single-invoice fetch (GET /:id) computes this — see
+// EmailSendStatus's doc comment. null means no send has been attempted yet
+// (still DRAFT).
+export interface InvoiceDetail extends Invoice {
+  emailSend: EmailSendInfo | null;
+}
+
 export function listInvoices(token: string) {
   return request<Invoice[]>("/api/invoices", { method: "GET", token });
 }
 
 export function getInvoice(token: string, id: string) {
-  return request<Invoice>(`/api/invoices/${id}`, { method: "GET", token });
+  return request<InvoiceDetail>(`/api/invoices/${id}`, { method: "GET", token });
 }
 
 export function createInvoice(token: string, jobId: string) {
@@ -79,6 +93,13 @@ export function updateInvoice(
 
 export function sendInvoice(token: string, id: string) {
   return request<Invoice>(`/api/invoices/${id}/send`, { method: "POST", token });
+}
+
+// Only meaningful (and only offered in the UI) once emailSend.status is
+// FAILED — see the router's doc comment on why a successful send can't be
+// retried the same way.
+export function resendInvoiceEmail(token: string, id: string) {
+  return request<{ ok: true }>(`/api/invoices/${id}/resend-email`, { method: "POST", token });
 }
 
 export function markInvoicePaid(token: string, id: string, input: MarkInvoicePaidInput) {
