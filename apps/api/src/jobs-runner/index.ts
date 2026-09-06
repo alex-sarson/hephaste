@@ -23,7 +23,14 @@ const resend =
 
 // Resend's own sandbox sender — deliverable without a verified domain, see
 // brief §9. Set RESEND_FROM_EMAIL once a real domain is verified.
-const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
+//
+// `||`, not `??`: .env.example documents an unset RESEND_FROM_EMAIL as "use
+// the sandbox sender", and `KEY=` in a .env file parses to "" (present,
+// not absent) — `??` only falls back on null/undefined, so it left
+// FROM_EMAIL as an empty string and Resend rejected every send with "the
+// domain is invalid" until this was caught. `||` treats "" as absent too,
+// which is what's actually wanted for an email address.
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
 export async function detectOverdue() {
   const result = await prisma.invoice.updateMany({
@@ -92,18 +99,31 @@ export async function sendInvoiceEmail(payload: { invoiceId: string }) {
       currency: invoice.account.currency,
       dueDate: invoice.dueDate ? invoice.dueDate.toISOString() : null,
     });
-    const { data, error } = await resend.emails.send({
+    const sendArgs = {
       from: FROM_EMAIL,
       to: recipientEmail,
-      // The sending business gets a copy of every invoice email it
-      // triggers, so they have their own confirmation it actually went
-      // out rather than having to trust the app's UI. account.contactEmail
-      // is a required field (see schema.prisma), so this is never empty.
-      bcc: invoice.account.contactEmail,
       subject,
       html,
       attachments: [{ filename: `${invoice.invoiceNumber}.pdf`, content: pdfBuffer }],
-    });
+    };
+    // The sending business gets a copy of every invoice email it triggers,
+    // so they have their own confirmation it actually went out rather than
+    // having to trust the app's UI — but Resend validates every recipient
+    // field (to/cc/bcc) in one atomic request, so a single bad bcc address
+    // (a placeholder/typo'd contactEmail in Settings — this actually
+    // happened) would otherwise fail the *entire* send, blocking delivery
+    // to the customer for a reason that has nothing to do with them.
+    // Retrying once without bcc keeps the confirmation-copy feature from
+    // being able to sink the one thing that actually matters.
+    let { data, error } = await resend.emails.send({ ...sendArgs, bcc: invoice.account.contactEmail });
+    let bccIncluded = true;
+    if (error) {
+      console.warn(
+        `SEND_INVOICE_EMAIL: Resend rejected ${invoice.invoiceNumber} with bcc ${invoice.account.contactEmail} (${error.message}); retrying without bcc`,
+      );
+      bccIncluded = false;
+      ({ data, error } = await resend.emails.send(sendArgs));
+    }
     // Thrown, not swallowed — caught by runJob's try/catch, which marks
     // the BackgroundJob FAILED with the error message. Unlike the stub
     // path, a real Resend call can genuinely fail (bad address, quota,
@@ -111,7 +131,9 @@ export async function sendInvoiceEmail(payload: { invoiceId: string }) {
     if (error) throw new Error(`Resend rejected ${invoice.invoiceNumber}: ${error.message}`);
     providerMessageId = data!.id;
     console.log(
-      `SEND_INVOICE_EMAIL: sent ${invoice.invoiceNumber} to ${recipientEmail} (bcc ${invoice.account.contactEmail}) via Resend (id=${providerMessageId})`,
+      `SEND_INVOICE_EMAIL: sent ${invoice.invoiceNumber} to ${recipientEmail}` +
+        (bccIncluded ? ` (bcc ${invoice.account.contactEmail})` : " (bcc dropped — see warning above)") +
+        ` via Resend (id=${providerMessageId})`,
     );
   } else {
     providerMessageId = `dev-stub-${invoice.id}`;
