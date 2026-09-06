@@ -3,7 +3,7 @@
 // customers — see apps/api/src/modules/jobs.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
-import type { JobStatus } from "@trade-platform/shared-types";
+import type { JobLocationType, JobStatus } from "@trade-platform/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
 import { createJob, listJobs, type Job } from "../api-client/jobs.js";
@@ -26,7 +26,19 @@ function formatScheduled(job: Job): string {
   return new Date(job.scheduledStart).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
+// Short forms for a table cell — see JobDetailPage's LOCATION_LABEL for the
+// fuller versions used in the edit form.
+const LOCATION_SHORT_LABEL: Record<JobLocationType, string> = {
+  ON_SITE: "On-site",
+  REMOTE: "Remote",
+  IN_HOUSE: "At our location",
+};
+
 function formatAddress(job: Job): string {
+  // Address fields only mean anything for an on-site job — see
+  // schema.prisma's Job.locationType. Showing the location type instead of
+  // a blank "—" for the other two is more informative, not less.
+  if (job.locationType !== "ON_SITE") return LOCATION_SHORT_LABEL[job.locationType];
   return [job.addressLine1, job.city, job.postcode].filter(Boolean).join(", ") || "—";
 }
 
