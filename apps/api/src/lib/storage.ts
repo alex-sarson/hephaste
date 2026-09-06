@@ -60,8 +60,11 @@ export async function deleteObject(key: string): Promise<void> {
 
 // Attachments are stored in a private bucket (no public-read policy set up
 // for either MinIO or R2 here), so downloads go through a short-lived
-// presigned URL rather than a permanent public link.
-export async function getDownloadUrl(key: string, expiresInSeconds = 300): Promise<string> {
+// presigned URL rather than a permanent public link. An hour rather than a
+// few minutes: the same URL now also backs an inline thumbnail that stays
+// on screen for as long as the job detail page is open, not just a single
+// click-through.
+export async function getDownloadUrl(key: string, expiresInSeconds = 3600): Promise<string> {
   return getSignedUrl(s3(), new GetObjectCommand({ Bucket: bucket(), Key: key }), {
     expiresIn: expiresInSeconds,
   });
