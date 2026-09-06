@@ -8,7 +8,26 @@ import type {
 } from "@trade-platform/shared-types";
 import { prisma } from "../../lib/db.js";
 
+// Same split as ../invoices/repository.ts's listInclude/detailInclude: the
+// list view only ever shows the customer's name, so there's no reason to
+// join and ship their contact/address fields on every row.
 const customerSelect = { customer: { select: { id: true, name: true } } } as const;
+
+const detailInclude = {
+  customer: {
+    select: { id: true, name: true, email: true, phone: true, addressLine1: true, addressLine2: true, city: true, postcode: true },
+  },
+  materials: { orderBy: { createdAt: "asc" as const } },
+  // Minimal — just enough for the job detail page to link out to an
+  // existing invoice or offer to create one. Deliberately not exclusive: a
+  // job can have more than one invoice (see schema.prisma's note on
+  // Invoice.jobId, brief §3.4 — e.g. re-invoicing extra work), so this is a
+  // list, not a single nullable relation.
+  invoices: {
+    select: { id: true, invoiceNumber: true, status: true },
+    orderBy: { createdAt: "desc" as const },
+  },
+};
 
 export function findMany(accountId: string) {
   return prisma.job.findMany({
@@ -21,7 +40,7 @@ export function findMany(accountId: string) {
 export function findById(accountId: string, id: string) {
   return prisma.job.findFirst({
     where: { id, accountId, deletedAt: null },
-    include: { ...customerSelect, materials: { orderBy: { createdAt: "asc" } } },
+    include: detailInclude,
   });
 }
 

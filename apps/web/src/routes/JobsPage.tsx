@@ -2,6 +2,7 @@
 // §13, build order item 3) the same way CustomersPage is wired to
 // customers — see apps/api/src/modules/jobs.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 import type { JobStatus } from "@trade-platform/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
@@ -31,6 +32,7 @@ function formatAddress(job: Job): string {
 
 export function JobsPage() {
   const { getToken } = useAuthToken();
+  const navigate = useNavigate();
   const terminology = useTerminology();
   const [jobs, setJobs] = useState<Job[] | null>(null);
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -187,6 +189,7 @@ export function JobsPage() {
         {visibleJobs.map((job, i) => (
           <div
             key={job.id}
+            onClick={() => navigate(`/jobs/${job.id}`)}
             style={{
               display: "grid",
               gridTemplateColumns: "2fr 1fr 1fr 1.3fr 32px",
@@ -194,6 +197,7 @@ export function JobsPage() {
               padding: "13px 4px",
               borderBottom: i < visibleJobs.length - 1 ? "1px solid var(--border-soft)" : undefined,
               opacity: job.status === "CANCELLED" ? 0.7 : undefined,
+              cursor: "pointer",
             }}
           >
             <div>
