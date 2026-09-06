@@ -5,17 +5,19 @@
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { calculateInvoiceTotals } from "@trade-platform/invoice-engine";
-import type { InvoiceLineItemInput, InvoiceStatus, LineItemType } from "@trade-platform/shared-types";
+import type { EmailSendStatus, InvoiceLineItemInput, InvoiceStatus, LineItemType } from "@trade-platform/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useAccount } from "../account/context.js";
 import {
   getInvoice,
   getInvoicePdfUrl,
   markInvoicePaid,
+  resendInvoiceEmail,
   sendInvoice,
   updateInvoice,
   voidInvoice,
   type Invoice,
+  type InvoiceDetail,
 } from "../api-client/invoices.js";
 import { InvoiceStatusBadge } from "../components/StatusBadge.js";
 import { DownloadIcon, PlusIcon } from "../components/icons.js";
@@ -29,6 +31,17 @@ const STATUS_EVENT: Record<InvoiceStatus, { label: string; background: string; c
   VIEWED: { label: "Viewed by customer", background: "var(--teal-bg)", color: "var(--teal-text)" },
   PAID: { label: "Marked as paid", background: "var(--green-bg)", color: "var(--green-text)" },
   VOID: { label: "Voided", background: "var(--red-bg)", color: "var(--red-text)" },
+};
+
+// The invoice's business status (above) flips to SENT the instant "Save &
+// send" is clicked — this is the separate, async outcome of actually
+// getting the email out (see EmailSendStatus's doc comment), computed from
+// the jobs-runner's SEND_INVOICE_EMAIL job rather than trusted from the UI
+// having clicked a button.
+const EMAIL_SEND_EVENT: Record<EmailSendStatus, { label: string; background: string; color: string }> = {
+  SENDING: { label: "Sending…", background: "var(--blue-bg)", color: "var(--blue-text)" },
+  SENT: { label: "Email delivered", background: "var(--green-bg)", color: "var(--green-text)" },
+  FAILED: { label: "Failed to send", background: "var(--red-bg)", color: "var(--red-text)" },
 };
 
 function money(amount: number | string): string {
@@ -56,7 +69,7 @@ export function InvoiceDetailPage() {
   const { getToken } = useAuthToken();
   const { account } = useAccount();
 
-  const [invoice, setInvoice] = useState<Invoice | null>(null);
+  const [invoice, setInvoice] = useState<InvoiceDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [lineItems, setLineItems] = useState<InvoiceLineItemInput[]>([]);
   const [notes, setNotes] = useState("");
@@ -66,6 +79,7 @@ export function InvoiceDetailPage() {
   const [amountPaid, setAmountPaid] = useState("");
   const [paidMethod, setPaidMethod] = useState("");
   const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [retryingEmail, setRetryingEmail] = useState(false);
 
   const refresh = useCallback(async () => {
     if (!id) return;
@@ -85,6 +99,17 @@ export function InvoiceDetailPage() {
   useEffect(() => {
     refresh();
   }, [refresh]);
+
+  // The email send happens out-of-band in the jobs-runner (brief §9/§10) —
+  // while it's in flight there's nothing here to react to yet, so poll
+  // until it resolves one way or the other rather than leaving "Sending…"
+  // stuck until the user manually reloads.
+  const emailSendStatus = invoice?.emailSend?.status;
+  useEffect(() => {
+    if (emailSendStatus !== "SENDING") return;
+    const timer = setInterval(refresh, 3000);
+    return () => clearInterval(timer);
+  }, [emailSendStatus, refresh]);
 
   if (error && !invoice) {
     return <div style={{ fontSize: 13, color: "var(--red-text)" }}>{error}</div>;
@@ -176,6 +201,21 @@ export function InvoiceDetailPage() {
       setError((err as Error).message);
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleRetryEmail() {
+    setRetryingEmail(true);
+    setError(null);
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      await resendInvoiceEmail(token, invoice!.id);
+      await refresh();
+    } catch (err) {
+      setError((err as Error).message);
+    } finally {
+      setRetryingEmail(false);
     }
   }
 
@@ -441,6 +481,38 @@ export function InvoiceDetailPage() {
 
         {/* Right column */}
         <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {invoice.emailSend && (
+            <div className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 10 }}>
+              <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 14 }}>Email delivery</div>
+              <div>
+                <span className="pill" style={{ background: EMAIL_SEND_EVENT[invoice.emailSend.status].background, color: EMAIL_SEND_EVENT[invoice.emailSend.status].color }}>
+                  <span className="dot" />
+                  {EMAIL_SEND_EVENT[invoice.emailSend.status].label}
+                </span>
+              </div>
+
+              {invoice.emailSend.status === "SENT" && account?.contactEmail && (
+                <div style={{ fontSize: 12, color: "var(--text-muted)", lineHeight: 1.5 }}>
+                  A copy was also BCC'd to <strong>{account.contactEmail}</strong> — keep it as proof of sending if a
+                  customer disputes receiving their invoice.
+                </div>
+              )}
+
+              {invoice.emailSend.status === "FAILED" && (
+                <>
+                  {invoice.emailSend.lastError && (
+                    <div style={{ fontSize: 12, color: "var(--text-muted)" }}>{invoice.emailSend.lastError}</div>
+                  )}
+                  <div>
+                    <button className="btn-secondary" onClick={handleRetryEmail} disabled={retryingEmail} style={{ height: 32, padding: "0 12px", fontSize: 12.5 }}>
+                      {retryingEmail ? "Retrying…" : "Retry send"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
           <div className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 14 }}>Status timeline</div>
             <div style={{ display: "flex", flexDirection: "column" }}>

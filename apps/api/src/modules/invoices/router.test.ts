@@ -132,6 +132,74 @@ describe("invoice lifecycle", () => {
   });
 });
 
+describe("email send status + retry", () => {
+  it("GET /:id reports emailSend: null before any send is attempted", async () => {
+    const jobId = await createJob(false);
+    const created = await request(app).post("/api/invoices").send({ jobId });
+
+    const res = await request(app).get(`/api/invoices/${created.body.id}`);
+    expect(res.body.emailSend).toBeNull();
+  });
+
+  it("reports SENDING right after /send, while the background job is still pending", async () => {
+    const jobId = await createJob(true);
+    const created = await request(app).post("/api/invoices").send({ jobId });
+    await request(app).post(`/api/invoices/${created.body.id}/send`);
+
+    const res = await request(app).get(`/api/invoices/${created.body.id}`);
+    expect(res.body.emailSend).toMatchObject({ status: "SENDING", lastError: null });
+  });
+
+  it("resend-email 409s while a send is already in progress, and before anything's been sent", async () => {
+    const jobId = await createJob(true);
+    const created = await request(app).post("/api/invoices").send({ jobId });
+    const id = created.body.id;
+
+    const beforeSend = await request(app).post(`/api/invoices/${id}/resend-email`);
+    expect(beforeSend.status).toBe(409);
+
+    await request(app).post(`/api/invoices/${id}/send`);
+    const whileSending = await request(app).post(`/api/invoices/${id}/resend-email`);
+    expect(whileSending.status).toBe(409);
+  });
+
+  it("resend-email enqueues a fresh job once the last attempt FAILED, and 409s again once it SUCCEEDED", async () => {
+    const jobId = await createJob(true);
+    const created = await request(app).post("/api/invoices").send({ jobId });
+    const id = created.body.id;
+    await request(app).post(`/api/invoices/${id}/send`);
+
+    // Simulate the jobs-runner having already picked up and failed the
+    // job — these tests don't run the real jobs-runner process, so its
+    // outcome is faked directly rather than waiting on a poll loop that
+    // isn't running.
+    await prisma.backgroundJob.updateMany({
+      where: { type: "SEND_INVOICE_EMAIL", payload: { equals: { invoiceId: id } } },
+      data: { status: "FAILED", lastError: "Resend rejected: the domain is invalid" },
+    });
+
+    const retried = await request(app).post(`/api/invoices/${id}/resend-email`);
+    expect(retried.status).toBe(202);
+
+    const afterRetry = await request(app).get(`/api/invoices/${id}`);
+    expect(afterRetry.body.emailSend).toMatchObject({ status: "SENDING" });
+
+    // Now simulate that retry succeeding — the FAILED job stays FAILED,
+    // but it's no longer the *latest* one, so the derived status should
+    // read from the newer SUCCEEDED job instead.
+    await prisma.backgroundJob.updateMany({
+      where: { type: "SEND_INVOICE_EMAIL", payload: { equals: { invoiceId: id } }, status: "PENDING" },
+      data: { status: "SUCCEEDED" },
+    });
+
+    const afterSuccess = await request(app).get(`/api/invoices/${id}`);
+    expect(afterSuccess.body.emailSend).toMatchObject({ status: "SENT", lastError: null });
+
+    const retryAfterSuccess = await request(app).post(`/api/invoices/${id}/resend-email`);
+    expect(retryAfterSuccess.status).toBe(409);
+  });
+});
+
 describe("GET /api/invoices/:id/pdf", () => {
   it("returns a PDF for an existing invoice", async () => {
     const jobId = await createJob(true);

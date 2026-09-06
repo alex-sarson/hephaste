@@ -4,6 +4,7 @@
 // InvoiceStatusEvent row is always written in the same transaction (brief
 // §4, packages/invoice-engine/src/stateMachine.ts).
 import type {
+  EmailSendStatus,
   InvoiceLineItemInput,
   InvoiceStatus,
   MarkInvoicePaidInput,
@@ -52,6 +53,36 @@ export async function findById(accountId: string, id: string) {
     include: detailInclude,
   });
   return invoice ? withComputedOverdue(invoice) : null;
+}
+
+export interface EmailSendInfo {
+  status: EmailSendStatus;
+  lastError: string | null;
+  updatedAt: Date;
+}
+
+/**
+ * The async outcome of the most recent SEND_INVOICE_EMAIL background job
+ * for this invoice — see EmailSendStatus. Null means no send has ever been
+ * attempted (still DRAFT). BackgroundJob.payload is a Json column with no
+ * direct invoiceId relation, so this is a JSON-path filter rather than a
+ * join — fine at this scale, and simpler than adding a column solely to
+ * index a lookup the UI only ever makes one at a time (the invoice detail
+ * page), not in bulk.
+ */
+export async function getEmailSendStatus(accountId: string, invoiceId: string): Promise<EmailSendInfo | null> {
+  const job = await prisma.backgroundJob.findFirst({
+    where: {
+      accountId,
+      type: "SEND_INVOICE_EMAIL",
+      payload: { path: ["invoiceId"], equals: invoiceId },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+  if (!job) return null;
+
+  const status: EmailSendStatus = job.status === "FAILED" ? "FAILED" : job.status === "SUCCEEDED" ? "SENT" : "SENDING";
+  return { status, lastError: status === "FAILED" ? job.lastError : null, updatedAt: job.updatedAt };
 }
 
 /**
