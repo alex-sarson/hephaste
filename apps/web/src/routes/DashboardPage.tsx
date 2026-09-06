@@ -1,14 +1,42 @@
-// Matches design/Main.dc.html. Stat cards, "needs invoicing" and "upcoming
-// jobs" lists, and the recent-invoices table are sample data — Phase 1
-// (brief §6, §13) wires this to GET /api/dashboard/summary once the jobs
-// and invoices modules exist. Customers is the only module with real data
-// today (see CustomersPage).
-import type { ComponentType } from "react";
+// Matches design/Main.dc.html. Wired to GET /api/dashboard/summary (brief
+// §6, §13) now that the jobs and invoices modules it aggregates both
+// exist — see apps/api/src/modules/dashboard.
+import { useCallback, useEffect, useState, type ComponentType } from "react";
+import { useNavigate } from "react-router-dom";
+import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
+import { getDashboardSummary, type DashboardSummary } from "../api-client/dashboard.js";
 import { PageHeader } from "../components/PageHeader.js";
 import { InvoiceStatusBadge } from "../components/StatusBadge.js";
 import { CalendarIcon, CheckCircleIcon, PlusIcon, WalletIcon, WarningIcon } from "../components/icons.js";
-import type { InvoiceStatus } from "@trade-platform/shared-types";
+
+function formatMoney(amount: string): string {
+  return `£${Number(amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function formatDue(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString(undefined, { day: "numeric", month: "short" });
+}
+
+function formatCompletedAgo(iso: string | null): string {
+  if (!iso) return "recently";
+  const days = Math.floor((Date.now() - new Date(iso).getTime()) / 86_400_000);
+  if (days <= 0) return "today";
+  if (days === 1) return "yesterday";
+  return `${days} days ago`;
+}
+
+function formatScheduledWhen(iso: string | null): string {
+  if (!iso) return "Unscheduled";
+  const date = new Date(iso);
+  const time = date.toLocaleTimeString(undefined, { hour: "numeric", minute: "2-digit" });
+  const days = Math.floor((date.getTime() - Date.now()) / 86_400_000);
+  if (days <= 0) return `Today, ${time}`;
+  if (days === 1) return `Tomorrow, ${time}`;
+  if (days < 7) return `${date.toLocaleDateString(undefined, { weekday: "short" })}, ${time}`;
+  return `${date.toLocaleDateString(undefined, { day: "numeric", month: "short" })}, ${time}`;
+}
 
 interface StatCardProps {
   label: string;
@@ -54,42 +82,52 @@ function StatCard({ label, value, sublabel, icon: Icon, tone = "default" }: Stat
   );
 }
 
-const NEEDS_INVOICING = [
-  { title: "Rewire upstairs sockets", customer: "Jane Whitfield", completedAgo: "2 days ago" },
-  { title: "Boiler service & flush", customer: "Riverside Cafe", completedAgo: "3 days ago" },
-  { title: "Garden tap installation", customer: "Marcus Ellery", completedAgo: "5 days ago" },
-];
-
-const UPCOMING_JOBS = [
-  { title: "Kitchen extension wiring", customer: "Aldridge Construction", when: "Tomorrow, 8:30am" },
-  { title: "Annual gas safety check", customer: "Priya Nandan", when: "Wed, 10:00am" },
-  { title: "Fuse board replacement", customer: "Riverside Cafe", when: "Thu, 9:00am" },
-];
-
-const RECENT_INVOICES: Array<{
-  number: string;
-  customer: string;
-  amount: string;
-  due: string;
-  status: InvoiceStatus;
-  overdue?: boolean;
-}> = [
-  { number: "INV-0043", customer: "Aldridge Construction", amount: "£1,240.00", due: "12 Sep", status: "SENT", overdue: true },
-  { number: "INV-0042", customer: "Jane Whitfield", amount: "£340.00", due: "18 Sep", status: "VIEWED" },
-  { number: "INV-0041", customer: "Riverside Cafe", amount: "£615.00", due: "15 Sep", status: "SENT" },
-  { number: "INV-0040", customer: "Priya Nandan", amount: "£890.00", due: "9 Sep", status: "PAID" },
-  { number: "INV-0039", customer: "Marcus Ellery", amount: "£212.00", due: "2 Sep", status: "PAID" },
-];
-
 export function DashboardPage() {
+  const { getToken } = useAuthToken();
+  const navigate = useNavigate();
   const terminology = useTerminology();
+  const [summary, setSummary] = useState<DashboardSummary | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  const refresh = useCallback(async () => {
+    try {
+      const token = await getToken();
+      if (!token) throw new Error("Not signed in");
+      setSummary(await getDashboardSummary(token));
+    } catch (err) {
+      setError((err as Error).message);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    refresh();
+  }, [refresh]);
+
+  if (error) {
+    return (
+      <div>
+        <PageHeader title="Dashboard" subtitle="Welcome back — here's what's outstanding." />
+        <div className="card" style={{ padding: 20, color: "var(--red-text)" }}>{error}</div>
+      </div>
+    );
+  }
+
+  if (!summary) {
+    return (
+      <div>
+        <PageHeader title="Dashboard" subtitle="Welcome back — here's what's outstanding." />
+        <div style={{ padding: 20, color: "var(--text-faint)" }}>Loading…</div>
+      </div>
+    );
+  }
+
   return (
     <div>
       <PageHeader
         title="Dashboard"
         subtitle="Welcome back — here's what's outstanding."
         action={
-          <button className="btn-primary">
+          <button className="btn-primary" onClick={() => navigate("/jobs")}>
             <PlusIcon />
             New {terminology.job.singular.toLowerCase()}
           </button>
@@ -97,10 +135,32 @@ export function DashboardPage() {
       />
 
       <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 20, marginBottom: 24 }}>
-        <StatCard label="Outstanding" value="£4,286.50" sublabel="across 6 invoices" icon={WalletIcon} />
-        <StatCard label="Overdue" value="£980.00" sublabel="2 invoices need chasing" icon={WarningIcon} tone="red" />
-        <StatCard label={`Upcoming ${terminology.job.plural.toLowerCase()}`} value="5" sublabel="in the next 7 days" icon={CalendarIcon} />
-        <StatCard label="Paid this month" value="£3,120.00" sublabel="9 invoices settled" icon={CheckCircleIcon} tone="green" />
+        <StatCard
+          label="Outstanding"
+          value={formatMoney(summary.outstanding.total)}
+          sublabel={`across ${summary.outstanding.count} invoice${summary.outstanding.count === 1 ? "" : "s"}`}
+          icon={WalletIcon}
+        />
+        <StatCard
+          label="Overdue"
+          value={formatMoney(summary.overdue.total)}
+          sublabel={`${summary.overdue.count} invoice${summary.overdue.count === 1 ? "" : "s"} need${summary.overdue.count === 1 ? "s" : ""} chasing`}
+          icon={WarningIcon}
+          tone={summary.overdue.count > 0 ? "red" : "default"}
+        />
+        <StatCard
+          label={`Upcoming ${terminology.job.plural.toLowerCase()}`}
+          value={String(summary.upcomingJobsCount)}
+          sublabel="in the next 7 days"
+          icon={CalendarIcon}
+        />
+        <StatCard
+          label="Paid this month"
+          value={formatMoney(summary.paidThisMonth.total)}
+          sublabel={`${summary.paidThisMonth.count} invoice${summary.paidThisMonth.count === 1 ? "" : "s"} settled`}
+          icon={CheckCircleIcon}
+          tone="green"
+        />
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, marginBottom: 24 }}>
@@ -108,12 +168,15 @@ export function DashboardPage() {
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15 }}>Needs invoicing</div>
             <div style={{ fontSize: 12, color: "var(--text-faint)" }}>
-              {NEEDS_INVOICING.length} completed {terminology.job.plural.toLowerCase()}
+              {summary.needsInvoicing.length} completed {terminology.job.plural.toLowerCase()}
             </div>
           </div>
-          {NEEDS_INVOICING.map((job) => (
+          {summary.needsInvoicing.length === 0 && (
+            <div style={{ padding: "12px 0", fontSize: 13, color: "var(--text-faint)" }}>Nothing waiting to be invoiced.</div>
+          )}
+          {summary.needsInvoicing.map((job) => (
             <div
-              key={job.title}
+              key={job.jobId}
               style={{
                 display: "flex",
                 alignItems: "center",
@@ -125,10 +188,14 @@ export function DashboardPage() {
               <div>
                 <div style={{ fontSize: 13.5, fontWeight: 600 }}>{job.title}</div>
                 <div style={{ fontSize: 12.5, color: "var(--text-muted)", marginTop: 2 }}>
-                  {job.customer} · completed {job.completedAgo}
+                  {job.customerName} · completed {formatCompletedAgo(job.completedAt)}
                 </div>
               </div>
-              <button className="btn-secondary" style={{ height: 32, padding: "0 13px", fontSize: 12.5 }}>
+              <button
+                className="btn-secondary"
+                style={{ height: 32, padding: "0 13px", fontSize: 12.5 }}
+                onClick={() => navigate(`/jobs/${job.jobId}`)}
+              >
                 Create invoice
               </button>
             </div>
@@ -139,11 +206,20 @@ export function DashboardPage() {
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15, marginBottom: 14 }}>
             Upcoming {terminology.job.plural.toLowerCase()}
           </div>
-          {UPCOMING_JOBS.map((job) => (
-            <div key={job.title} style={{ padding: "11px 0", borderTop: "1px solid var(--border-soft)" }}>
+          {summary.upcomingJobs.length === 0 && (
+            <div style={{ padding: "11px 0", fontSize: 13, color: "var(--text-faint)" }}>Nothing scheduled.</div>
+          )}
+          {summary.upcomingJobs.map((job) => (
+            <div
+              key={job.jobId}
+              style={{ padding: "11px 0", borderTop: "1px solid var(--border-soft)", cursor: "pointer" }}
+              onClick={() => navigate(`/jobs/${job.jobId}`)}
+            >
               <div style={{ fontSize: 13, fontWeight: 600 }}>{job.title}</div>
-              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{job.customer}</div>
-              <div style={{ fontSize: 11.5, color: "var(--text-faint)", marginTop: 4 }}>{job.when}</div>
+              <div style={{ fontSize: 12, color: "var(--text-muted)", marginTop: 2 }}>{job.customerName}</div>
+              <div style={{ fontSize: 11.5, color: "var(--text-faint)", marginTop: 4 }}>
+                {formatScheduledWhen(job.scheduledStart)}
+              </div>
             </div>
           ))}
         </div>
@@ -152,7 +228,14 @@ export function DashboardPage() {
       <div className="card" style={{ padding: "20px 24px" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15 }}>Recent invoices</div>
-          <a href="#" style={{ fontSize: 12.5, fontWeight: 600 }}>
+          <a
+            href="/invoices"
+            onClick={(e) => {
+              e.preventDefault();
+              navigate("/invoices");
+            }}
+            style={{ fontSize: 12.5, fontWeight: 600 }}
+          >
             View all
           </a>
         </div>
@@ -177,22 +260,28 @@ export function DashboardPage() {
           <div>Status</div>
         </div>
 
-        {RECENT_INVOICES.map((invoice, i) => (
+        {summary.recentInvoices.length === 0 && (
+          <div style={{ padding: "16px 4px", fontSize: 13, color: "var(--text-faint)" }}>No invoices yet.</div>
+        )}
+
+        {summary.recentInvoices.map((invoice, i) => (
           <div
-            key={invoice.number}
+            key={invoice.id}
             style={{
               display: "grid",
               gridTemplateColumns: "110px 1.4fr 0.9fr 0.9fr 0.9fr",
               alignItems: "center",
               padding: "12px 4px",
-              borderBottom: i < RECENT_INVOICES.length - 1 ? "1px solid var(--border-soft)" : undefined,
+              borderBottom: i < summary.recentInvoices.length - 1 ? "1px solid var(--border-soft)" : undefined,
               fontSize: 13,
+              cursor: "pointer",
             }}
+            onClick={() => navigate(`/invoices/${invoice.id}`)}
           >
-            <div style={{ fontWeight: 600 }}>{invoice.number}</div>
-            <div>{invoice.customer}</div>
-            <div style={{ fontVariantNumeric: "tabular-nums" }}>{invoice.amount}</div>
-            <div style={{ color: "var(--text-muted)" }}>{invoice.due}</div>
+            <div style={{ fontWeight: 600 }}>{invoice.invoiceNumber}</div>
+            <div>{invoice.customerName}</div>
+            <div style={{ fontVariantNumeric: "tabular-nums" }}>{formatMoney(invoice.total)}</div>
+            <div style={{ color: "var(--text-muted)" }}>{formatDue(invoice.dueDate)}</div>
             <div>
               <InvoiceStatusBadge status={invoice.status} overdue={invoice.overdue} />
             </div>

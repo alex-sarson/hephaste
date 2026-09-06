@@ -10,6 +10,7 @@ import { accountRouter } from "./modules/account/router.js";
 import { customersRouter } from "./modules/customers/router.js";
 import { jobsRouter } from "./modules/jobs/router.js";
 import { invoicesRouter } from "./modules/invoices/router.js";
+import { dashboardRouter } from "./modules/dashboard/router.js";
 import { adminRouter } from "./modules/admin/router.js";
 import { handleResendWebhook } from "./modules/email/webhooks.js";
 import { errorHandler } from "./middleware/errorHandler.js";
@@ -43,6 +44,7 @@ app.use("/api/account", accountRouter);
 app.use("/api/customers", customersRouter);
 app.use("/api/jobs", jobsRouter);
 app.use("/api/invoices", invoicesRouter);
+app.use("/api/dashboard", dashboardRouter);
 
 // Inbound provider webhook — no tenant session, see webhooks.ts.
 app.post("/api/webhooks/resend", handleResendWebhook);
