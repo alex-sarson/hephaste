@@ -5,7 +5,7 @@
 // the accountId filter becomes a type error, not a silent data leak.
 //
 // Other modules (jobs, invoices — Phase 1) should follow this same shape.
-import type { CreateCustomerInput, UpdateCustomerInput } from "@trade-platform/shared-types";
+import type { CreateCustomerInput, UpdateCustomerInput } from "@hephaste/shared-types";
 import { prisma } from "../../lib/db.js";
 
 export function findMany(accountId: string) {

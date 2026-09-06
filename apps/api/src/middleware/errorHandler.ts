@@ -1,6 +1,6 @@
 import type { NextFunction, Request, Response } from "express";
 import { ZodError } from "zod";
-import { InvalidInvoiceTransitionError } from "@trade-platform/invoice-engine";
+import { InvalidInvoiceTransitionError } from "@hephaste/invoice-engine";
 
 // Centralized error handling so route handlers can just `throw`.
 export function errorHandler(

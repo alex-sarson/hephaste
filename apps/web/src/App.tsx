@@ -40,7 +40,7 @@ function SignedOutScreen() {
         <BrandMark width={22} height={22} />
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22 }}>Trade Platform</div>
+        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22 }}>Hephaste</div>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", marginTop: 6 }}>
           Sign in to view your dashboard.
         </p>

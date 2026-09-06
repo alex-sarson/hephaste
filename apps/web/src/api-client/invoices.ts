@@ -5,7 +5,7 @@ import type {
   LineItemType,
   MarkInvoicePaidInput,
   TriggerSource,
-} from "@trade-platform/shared-types";
+} from "@hephaste/shared-types";
 import { API_BASE_URL, request } from "./client.js";
 
 export interface InvoiceLineItem {

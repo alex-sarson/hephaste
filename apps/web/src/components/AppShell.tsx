@@ -63,7 +63,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               letterSpacing: "-0.01em",
             }}
           >
-            Trade Platform
+            Hephaste
           </div>
         </div>
 

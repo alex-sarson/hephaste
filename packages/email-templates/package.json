@@ -1,5 +1,5 @@
 {
-  "name": "@trade-platform/email-templates",
+  "name": "@hephaste/email-templates",
   "private": true,
   "version": "0.0.0",
   "type": "module",

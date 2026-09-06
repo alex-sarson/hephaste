@@ -4,7 +4,7 @@ import {
   createJobSchema,
   updateJobSchema,
   updateJobStatusSchema,
-} from "@trade-platform/shared-types";
+} from "@hephaste/shared-types";
 import { resolveAccount } from "../../middleware/tenantScope.js";
 import * as jobsRepo from "./repository.js";
 

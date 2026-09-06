@@ -1,6 +1,6 @@
 // Thin typed fetch wrapper. Each module (customers, jobs, invoices) gets its
 // own small file here that calls `request` and types the response using the
-// corresponding schema from @trade-platform/shared-types — never `any`.
+// corresponding schema from @hephaste/shared-types — never `any`.
 export const API_BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:3001";
 
 export async function request<T>(

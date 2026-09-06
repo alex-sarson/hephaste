@@ -1,4 +1,4 @@
-import { PrismaClient } from "@trade-platform/db";
+import { PrismaClient } from "@hephaste/db";
 
 // Single shared Prisma client for the whole API process. The normal app
 // connection must have RLS enforced at the database level (FORCE ROW LEVEL

@@ -1,6 +1,7 @@
 /* Design tokens — mirrors design/Styleguide.dc.html exactly. Any palette or
    type change should be made there first (it's the published reference:
-   see the "Trade Platform Design System" artifact) and then copied here. */
+   see the "Trade Platform Design System" artifact — not yet renamed to
+   match the app's Hephaste rebrand) and then copied here. */
 :root {
   --bg: oklch(97.3% 0.008 75);
   --surface: oklch(99% 0.003 80);

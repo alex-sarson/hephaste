@@ -4,7 +4,7 @@
 // InvoiceDetailPage, which follows that layout.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import type { InvoiceStatus } from "@trade-platform/shared-types";
+import type { InvoiceStatus } from "@hephaste/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
 import { createInvoice, listInvoices, type Invoice } from "../api-client/invoices.js";

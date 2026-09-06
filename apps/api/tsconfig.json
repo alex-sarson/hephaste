@@ -4,7 +4,7 @@
     "outDir": "dist",
     "rootDir": "src",
     "types": ["node"],
-    // Not used directly here — needed because @trade-platform/pdf exposes
+    // Not used directly here — needed because @hephaste/pdf exposes
     // types straight from its .tsx source (see packages/config's removed
     // declaration/declarationMap note), so tsc follows that import into a
     // JSX file as part of this project's own compilation.

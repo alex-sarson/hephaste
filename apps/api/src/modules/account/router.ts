@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { onboardingRequestSchema, updateAccountProfileSchema } from "@trade-platform/shared-types";
+import { onboardingRequestSchema, updateAccountProfileSchema } from "@hephaste/shared-types";
 import { resolveAccount } from "../../middleware/tenantScope.js";
 import { prisma } from "../../lib/db.js";
 

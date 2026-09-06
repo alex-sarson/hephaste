@@ -8,13 +8,13 @@
 // Unlike InvoiceDetailPage, there's no DRAFT-style lock here — the API
 // (jobsRepo.update/updateStatus) allows editing a job in any status, and
 // status itself isn't a validated state machine the way invoice status is
-// (see @trade-platform/invoice-engine's assertValidTransition) — any
+// (see @hephaste/invoice-engine's assertValidTransition) — any
 // status can be set from any other, matched here with a plain dropdown
 // rather than a "next step" button that would imply an ordering the
 // backend doesn't actually enforce.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { JobLocationType, JobStatus } from "@trade-platform/shared-types";
+import type { JobLocationType, JobStatus } from "@hephaste/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
 import {

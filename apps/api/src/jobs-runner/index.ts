@@ -1,12 +1,12 @@
 // Background worker process — see brief §10. Deployed as a second small
-// process/service (`pnpm --filter @trade-platform/api jobs-runner`, or via
+// process/service (`pnpm --filter @hephaste/api jobs-runner`, or via
 // `pnpm dev` at the repo root — see turbo.json's `jobs-runner` task),
 // separate from the HTTP server, polling the BackgroundJob table.
 import "../env.js";
 import { fileURLToPath } from "node:url";
 import { Resend } from "resend";
-import { renderInvoicePdf } from "@trade-platform/pdf";
-import { renderInvoiceSentEmail } from "@trade-platform/email-templates";
+import { renderInvoicePdf } from "@hephaste/pdf";
+import { renderInvoiceSentEmail } from "@hephaste/email-templates";
 import { prisma } from "../lib/db.js";
 import { buildInvoicePdfData } from "../modules/invoices/pdfData.js";
 

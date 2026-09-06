@@ -1,4 +1,4 @@
-import type { InvoiceStatus } from "@trade-platform/shared-types";
+import type { InvoiceStatus } from "@hephaste/shared-types";
 import { request } from "./client.js";
 
 export interface DashboardSummary {

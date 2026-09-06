@@ -5,7 +5,7 @@ import type {
   JobLocationType,
   JobStatus,
   UpdateJobInput,
-} from "@trade-platform/shared-types";
+} from "@hephaste/shared-types";
 import { request } from "./client.js";
 
 export interface Job {

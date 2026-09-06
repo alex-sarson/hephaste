@@ -6,7 +6,7 @@
 // this screen; styled to the same card/input/btn-primary conventions as
 // the rest of the app, matching the precedent set by SettingsPage.tsx.
 import { useState, type FormEvent } from "react";
-import { INDUSTRY_PRESETS, type Industry, type TerminologyInput } from "@trade-platform/shared-types";
+import { INDUSTRY_PRESETS, type Industry, type TerminologyInput } from "@hephaste/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useAccount } from "../account/context.js";
 import { updateTerminology } from "../api-client/account.js";
@@ -110,7 +110,7 @@ export function OnboardingPage() {
           >
             <BrandMark />
           </div>
-          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16 }}>Trade Platform</div>
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 16 }}>Hephaste</div>
         </div>
 
         <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 24, letterSpacing: "-0.01em" }}>

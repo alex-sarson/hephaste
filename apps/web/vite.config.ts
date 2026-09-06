@@ -17,9 +17,9 @@ export default defineConfig({
       registerType: "autoUpdate",
       includeAssets: ["favicon.ico"],
       manifest: {
-        name: "Trade Platform",
-        short_name: "TradePlatform",
-        description: "Track jobs and invoicing for trades people",
+        name: "Hephaste",
+        short_name: "Hephaste",
+        description: "Manage jobs, clients, and invoicing in one place",
         theme_color: "#2a2019",
         background_color: "#f7f4f0",
         display: "standalone",

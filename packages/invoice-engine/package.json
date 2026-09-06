@@ -1,5 +1,5 @@
 {
-  "name": "@trade-platform/invoice-engine",
+  "name": "@hephaste/invoice-engine",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -12,7 +12,7 @@
     "test": "vitest run"
   },
   "dependencies": {
-    "@trade-platform/shared-types": "workspace:*"
+    "@hephaste/shared-types": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

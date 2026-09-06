@@ -1,4 +1,4 @@
-// Trade Platform — core domain schema.
+// Hephaste — core domain schema.
 //
 // INVARIANT: every tenant-owned model carries a non-nullable `accountId` column,
 // even where it could be reached transitively via a parent relation (e.g.
@@ -58,7 +58,7 @@ model Account {
   // Multi-industry onboarding & terminology (see docs/PROJECT_PLAN.md
   // §3a). `industry` is deliberately a plain string, not a Postgres enum —
   // validated against the known set only at the Zod boundary
-  // (@trade-platform/shared-types industrySchema) so adding a new industry
+  // (@hephaste/shared-types industrySchema) so adding a new industry
   // later is a code-only change, no migration. The six label columns store
   // the *resolved* terminology directly (not a preset + override delta);
   // `onboardingCompletedAt` is the sole gate: null means the required

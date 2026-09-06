@@ -1,6 +1,7 @@
 // Hand-drawn inline SVG icons, mirrored 1:1 from design/*.dc.html — never
 // emoji, per the design system (see the published "Trade Platform Design
-// System" artifact). Every icon is stroke-based, currentColor, so it
+// System" artifact — not yet renamed to match the app's Hephaste rebrand).
+// Every icon is stroke-based, currentColor, so it
 // recolors with the surrounding text color automatically.
 import type { SVGProps } from "react";
 

@@ -12,18 +12,18 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: trade_platform
-          POSTGRES_PASSWORD: trade_platform
-          POSTGRES_DB: trade_platform
+          POSTGRES_USER: hephaste
+          POSTGRES_PASSWORD: hephaste
+          POSTGRES_DB: hephaste
         ports:
           - 5432:5432
         options: >-
-          --health-cmd "pg_isready -U trade_platform"
+          --health-cmd "pg_isready -U hephaste"
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
     env:
-      DATABASE_URL: "postgresql://trade_platform:trade_platform@localhost:5432/trade_platform"
+      DATABASE_URL: "postgresql://hephaste:hephaste@localhost:5432/hephaste"
       # Enables the local-only dev-auth bypass (apps/api/src/lib/devAuth.ts)
       # for integration tests that hit a real Postgres — never set in a
       # deployed environment; devAuth.ts also refuses to activate it when
@@ -43,7 +43,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Apply migrations
-        run: pnpm --filter @trade-platform/db exec prisma migrate deploy
+        run: pnpm --filter @hephaste/db exec prisma migrate deploy
 
       - name: Lint
         run: pnpm turbo run lint

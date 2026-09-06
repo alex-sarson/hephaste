@@ -2,7 +2,7 @@
 // only ever change through `assertValidTransition` (or a caller that has
 // already checked it); every accepted transition must be paired with an
 // InvoiceStatusEvent row written in the same DB transaction.
-import type { InvoiceStatus, TriggerSource } from "@trade-platform/shared-types";
+import type { InvoiceStatus, TriggerSource } from "@hephaste/shared-types";
 
 const ALLOWED_TRANSITIONS: Record<InvoiceStatus, InvoiceStatus[]> = {
   DRAFT: ["SENT", "VOID"],

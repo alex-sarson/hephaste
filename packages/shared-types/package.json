@@ -1,5 +1,5 @@
 {
-  "name": "@trade-platform/shared-types",
+  "name": "@hephaste/shared-types",
   "private": true,
   "version": "0.0.0",
   "type": "module",
