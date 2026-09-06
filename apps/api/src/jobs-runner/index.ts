@@ -4,11 +4,26 @@
 // separate from the HTTP server, polling the BackgroundJob table.
 import "../env.js";
 import { fileURLToPath } from "node:url";
+import { Resend } from "resend";
 import { renderInvoicePdf } from "@trade-platform/pdf";
+import { renderInvoiceSentEmail } from "@trade-platform/email-templates";
 import { prisma } from "../lib/db.js";
 import { buildInvoicePdfData } from "../modules/invoices/pdfData.js";
 
 const POLL_INTERVAL_MS = 5000;
+
+// NODE_ENV !== "test" mirrors the backstop in lib/devAuth.ts's
+// isDevAuthEnabled(): Vitest sets NODE_ENV=test on its own, and a real
+// .env in a dev checkout can (and now does) hold a live RESEND_API_KEY.
+// Without this, `vitest run` would fire real emails through Resend.
+const resend =
+  process.env.RESEND_API_KEY && process.env.NODE_ENV !== "test"
+    ? new Resend(process.env.RESEND_API_KEY)
+    : null;
+
+// Resend's own sandbox sender — deliverable without a verified domain, see
+// brief §9. Set RESEND_FROM_EMAIL once a real domain is verified.
+const FROM_EMAIL = process.env.RESEND_FROM_EMAIL ?? "onboarding@resend.dev";
 
 export async function detectOverdue() {
   const result = await prisma.invoice.updateMany({
@@ -31,13 +46,12 @@ export async function detectOverdue() {
  * modules/invoices/router.ts's POST /:id/send) — this only needs to
  * record that the email side actually went out.
  *
- * No RESEND_API_KEY is configured (stubbed on purpose, matching the
- * dev-auth bypass's philosophy — swap in a real Resend call once a key
- * exists), so this logs what *would* have been sent instead of actually
- * calling Resend, but still renders a real PDF and writes a real
- * EmailEvent(SENT) row with a providerMessageId — the row the Resend
- * webhook handler (modules/email/webhooks.ts) needs to later correlate
- * an Open event against and drive SENT -> VIEWED.
+ * Falls back to a dev-stub log (no real send) when either RESEND_API_KEY
+ * isn't configured or the customer has no email on file — but still
+ * renders a real PDF and writes a real EmailEvent(SENT) row with a
+ * providerMessageId either way, since that's the row the Resend webhook
+ * handler (modules/email/webhooks.ts) needs to later correlate an Open
+ * event against and drive SENT -> VIEWED.
  */
 export async function sendInvoiceEmail(payload: { invoiceId: string }) {
   const invoice = await prisma.invoice.findUnique({
@@ -66,12 +80,47 @@ export async function sendInvoiceEmail(payload: { invoiceId: string }) {
   }
 
   const pdfBuffer = await renderInvoicePdf(buildInvoicePdfData(invoice, invoice.account));
-  const providerMessageId = `dev-stub-${invoice.id}`;
+  const recipientEmail = invoice.customer.email;
+  let providerMessageId: string;
 
-  console.log(
-    `[dev email stub] Would send ${invoice.invoiceNumber} to ${invoice.customer.email ?? "(no email on file)"}` +
-      ` — ${pdfBuffer.length}-byte PDF attached. No RESEND_API_KEY configured, so nothing was actually delivered.`,
-  );
+  if (resend && recipientEmail) {
+    const { subject, html } = renderInvoiceSentEmail({
+      businessName: invoice.account.businessName,
+      customerName: invoice.customer.name,
+      invoiceNumber: invoice.invoiceNumber,
+      total: Number(invoice.total),
+      currency: invoice.account.currency,
+      dueDate: invoice.dueDate ? invoice.dueDate.toISOString() : null,
+    });
+    const { data, error } = await resend.emails.send({
+      from: FROM_EMAIL,
+      to: recipientEmail,
+      // The sending business gets a copy of every invoice email it
+      // triggers, so they have their own confirmation it actually went
+      // out rather than having to trust the app's UI. account.contactEmail
+      // is a required field (see schema.prisma), so this is never empty.
+      bcc: invoice.account.contactEmail,
+      subject,
+      html,
+      attachments: [{ filename: `${invoice.invoiceNumber}.pdf`, content: pdfBuffer }],
+    });
+    // Thrown, not swallowed — caught by runJob's try/catch, which marks
+    // the BackgroundJob FAILED with the error message. Unlike the stub
+    // path, a real Resend call can genuinely fail (bad address, quota,
+    // provider outage), so this must not record a false SENT event.
+    if (error) throw new Error(`Resend rejected ${invoice.invoiceNumber}: ${error.message}`);
+    providerMessageId = data!.id;
+    console.log(
+      `SEND_INVOICE_EMAIL: sent ${invoice.invoiceNumber} to ${recipientEmail} (bcc ${invoice.account.contactEmail}) via Resend (id=${providerMessageId})`,
+    );
+  } else {
+    providerMessageId = `dev-stub-${invoice.id}`;
+    const reason = !resend ? "No RESEND_API_KEY configured" : "customer has no email on file";
+    console.log(
+      `[dev email stub] Would send ${invoice.invoiceNumber} to ${recipientEmail ?? "(no email on file)"}` +
+        ` — ${pdfBuffer.length}-byte PDF attached. ${reason}, so nothing was actually delivered.`,
+    );
+  }
 
   await prisma.emailEvent.create({
     data: {
@@ -79,7 +128,7 @@ export async function sendInvoiceEmail(payload: { invoiceId: string }) {
       invoiceId: invoice.id,
       providerMessageId,
       eventType: "SENT",
-      recipientEmail: invoice.customer.email ?? "unknown",
+      recipientEmail: recipientEmail ?? "unknown",
       occurredAt: new Date(),
     },
   });
