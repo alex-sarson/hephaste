@@ -33,6 +33,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           width: 240,
           flexShrink: 0,
           background: "var(--sidebar-bg)",
+          borderRight: "1px solid var(--border-soft)",
           display: "flex",
           flexDirection: "column",
           padding: "24px 16px",
@@ -44,7 +45,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             style={{
               width: 32,
               height: 32,
-              borderRadius: 8,
+              borderRadius: 999,
               background: "var(--accent)",
               display: "flex",
               alignItems: "center",
@@ -59,7 +60,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               fontFamily: "var(--font-display)",
               fontWeight: 700,
               fontSize: 16,
-              color: "oklch(96% 0.006 70)",
+              color: "var(--text)",
               letterSpacing: "-0.01em",
             }}
           >
@@ -77,7 +78,7 @@ export function AppShell({ children }: { children: ReactNode }) {
           );
         })}
 
-        <div style={{ height: 1, background: "oklch(100% 0 0 / 0.08)", margin: "12px 4px" }} />
+        <div style={{ height: 1, background: "oklch(0% 0 0 / 0.08)", margin: "12px 4px" }} />
 
         <Link to="/settings" className={`navlink${location.pathname === "/settings" ? " active" : ""}`}>
           <SettingsIcon />
@@ -91,7 +92,7 @@ export function AppShell({ children }: { children: ReactNode }) {
             alignItems: "center",
             gap: 10,
             padding: "12px 8px 4px 8px",
-            borderTop: "1px solid oklch(100% 0 0 / 0.08)",
+            borderTop: "1px solid oklch(0% 0 0 / 0.08)",
           }}
         >
           <div
@@ -106,7 +107,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               fontFamily: "var(--font-display)",
               fontWeight: 600,
               fontSize: 12,
-              color: "var(--accent-soft)",
+              color: "var(--accent-soft-text)",
               flexShrink: 0,
             }}
           >
@@ -117,7 +118,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               style={{
                 fontSize: 12.5,
                 fontWeight: 600,
-                color: "oklch(93% 0.01 60)",
+                color: "var(--text)",
                 whiteSpace: "nowrap",
                 overflow: "hidden",
                 textOverflow: "ellipsis",

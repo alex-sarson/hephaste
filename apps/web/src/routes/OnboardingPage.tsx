@@ -100,7 +100,7 @@ export function OnboardingPage() {
             style={{
               width: 32,
               height: 32,
-              borderRadius: 8,
+              borderRadius: 999,
               background: "var(--accent)",
               display: "flex",
               alignItems: "center",

@@ -30,7 +30,7 @@ function SignedOutScreen() {
         style={{
           width: 44,
           height: 44,
-          borderRadius: 10,
+          borderRadius: 999,
           background: "var(--accent)",
           display: "flex",
           alignItems: "center",

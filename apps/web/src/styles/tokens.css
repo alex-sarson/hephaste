@@ -1,27 +1,27 @@
-/* Design tokens — mirrors design/Styleguide.dc.html exactly. Any palette or
-   type change should be made there first (it's the published reference:
-   see the "Trade Platform Design System" artifact — not yet renamed to
-   match the app's Hephaste rebrand) and then copied here. */
+/* Design tokens — mirrors design/GoldSubtle.dc.html exactly (the Gold
+   subtle colourway, chosen from the "Hephaste Design System" artifact's
+   rebrand exploration). Any palette or type change should be made there
+   first and then copied here. */
 :root {
-  --bg: oklch(97.3% 0.008 75);
-  --surface: oklch(99% 0.003 80);
-  --surface-alt: oklch(95.3% 0.01 75);
-  --border: oklch(88.5% 0.013 70);
-  --border-soft: oklch(92.5% 0.01 72);
-  --text: oklch(24% 0.02 50);
-  --text-muted: oklch(46% 0.02 55);
-  --text-faint: oklch(63% 0.014 60);
+  --bg: oklch(97.5% 0.014 85);
+  --surface: oklch(99% 0.006 85);
+  --surface-alt: oklch(95% 0.018 82);
+  --border: oklch(87% 0.02 78);
+  --border-soft: oklch(92% 0.015 80);
+  --text: oklch(24% 0.02 70);
+  --text-muted: oklch(46% 0.02 70);
+  --text-faint: oklch(63% 0.016 72);
 
-  --sidebar-bg: oklch(21% 0.017 50);
-  --sidebar-text: oklch(83% 0.012 60);
-  --sidebar-text-muted: oklch(58% 0.02 55);
-  --sidebar-active-bg: oklch(31% 0.035 46);
+  --sidebar-bg: oklch(92% 0.02 78);
+  --sidebar-text: oklch(28% 0.02 70);
+  --sidebar-text-muted: oklch(48% 0.02 72);
+  --sidebar-active-bg: oklch(85% 0.028 80);
 
-  --accent: oklch(62% 0.16 45);
-  --accent-hover: oklch(55% 0.17 42);
-  --accent-soft: oklch(93% 0.035 55);
-  --accent-soft-text: oklch(40% 0.12 40);
-  --on-accent: oklch(99% 0.006 70);
+  --accent: oklch(58% 0.13 80);
+  --accent-hover: oklch(52% 0.14 78);
+  --accent-soft: oklch(92% 0.045 82);
+  --accent-soft-text: oklch(38% 0.1 75);
+  --on-accent: oklch(99% 0.01 85);
 
   --green-bg: oklch(93% 0.05 145); --green-text: oklch(40% 0.13 145);
   --blue-bg: oklch(93% 0.03 250); --blue-text: oklch(45% 0.12 250);
@@ -87,7 +87,7 @@ button {
 }
 .navlink.active {
   background: var(--sidebar-active-bg);
-  color: oklch(97% 0.01 60);
+  color: var(--text);
   font-weight: 600;
 }
 
