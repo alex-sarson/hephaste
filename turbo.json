@@ -12,7 +12,7 @@
     "jobs-runner": {
       "cache": false,
       "persistent": true,
-      "env": ["DATABASE_URL", "AUTH_MODE"]
+      "env": ["DATABASE_URL", "AUTH_MODE", "RESEND_API_KEY", "RESEND_FROM_EMAIL"]
     },
     "lint": {
       "dependsOn": ["^build"]
