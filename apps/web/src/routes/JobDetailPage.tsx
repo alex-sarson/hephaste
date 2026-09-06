@@ -270,21 +270,6 @@ export function JobDetailPage() {
             />
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Location</label>
-            <div className="input">
-              <select
-                value={locationType}
-                onChange={(e) => setLocationType(e.target.value as JobLocationType)}
-                style={{ border: "none", outline: "none", background: "transparent", fontSize: 13, width: "100%" }}
-              >
-                {LOCATION_OPTIONS.map((l) => (
-                  <option key={l} value={l}>{LOCATION_LABEL[l]}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Scheduled start</label>
@@ -297,6 +282,21 @@ export function JobDetailPage() {
               <div className="input">
                 <input type="datetime-local" value={scheduledEnd} onChange={(e) => setScheduledEnd(e.target.value)} />
               </div>
+            </div>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Location</label>
+            <div className="input">
+              <select
+                value={locationType}
+                onChange={(e) => setLocationType(e.target.value as JobLocationType)}
+                style={{ border: "none", outline: "none", background: "transparent", fontSize: 13, width: "100%" }}
+              >
+                {LOCATION_OPTIONS.map((l) => (
+                  <option key={l} value={l}>{LOCATION_LABEL[l]}</option>
+                ))}
+              </select>
             </div>
           </div>
 
