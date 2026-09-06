@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { createCustomerSchema, updateCustomerSchema } from "@trade-platform/shared-types";
+import { createCustomerSchema, updateCustomerSchema } from "@hephaste/shared-types";
 import { resolveAccount } from "../../middleware/tenantScope.js";
 import * as customersRepo from "./repository.js";
 

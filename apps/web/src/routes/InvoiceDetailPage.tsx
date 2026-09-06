@@ -4,8 +4,8 @@
 // checkpoint (Resend) and is left out rather than shown as a dead panel.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import { calculateInvoiceTotals } from "@trade-platform/invoice-engine";
-import type { EmailSendStatus, InvoiceLineItemInput, InvoiceStatus, LineItemType } from "@trade-platform/shared-types";
+import { calculateInvoiceTotals } from "@hephaste/invoice-engine";
+import type { EmailSendStatus, InvoiceLineItemInput, InvoiceStatus, LineItemType } from "@hephaste/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useAccount } from "../account/context.js";
 import {

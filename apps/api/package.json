@@ -1,5 +1,5 @@
 {
-  "name": "@trade-platform/api",
+  "name": "@hephaste/api",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -14,11 +14,11 @@
   },
   "dependencies": {
     "@clerk/backend": "^1.21.0",
-    "@trade-platform/db": "workspace:*",
-    "@trade-platform/email-templates": "workspace:^",
-    "@trade-platform/invoice-engine": "workspace:*",
-    "@trade-platform/pdf": "workspace:*",
-    "@trade-platform/shared-types": "workspace:*",
+    "@hephaste/db": "workspace:*",
+    "@hephaste/email-templates": "workspace:^",
+    "@hephaste/invoice-engine": "workspace:*",
+    "@hephaste/pdf": "workspace:*",
+    "@hephaste/shared-types": "workspace:*",
     "cors": "^2.8.5",
     "dotenv": "^16.4.0",
     "express": "^4.21.0",

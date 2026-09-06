@@ -1,18 +1,18 @@
-name: trade-platform
+name: hephaste
 
 services:
   postgres:
     image: postgres:16
     environment:
-      POSTGRES_USER: trade_platform
-      POSTGRES_PASSWORD: trade_platform
-      POSTGRES_DB: trade_platform
+      POSTGRES_USER: hephaste
+      POSTGRES_PASSWORD: hephaste
+      POSTGRES_DB: hephaste
     ports:
       - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U trade_platform"]
+      test: ["CMD-SHELL", "pg_isready -U hephaste"]
       interval: 5s
       timeout: 5s
       retries: 5

@@ -1,6 +1,6 @@
 import { Router } from "express";
-import { createInvoiceSchema, markInvoicePaidSchema, updateInvoiceSchema } from "@trade-platform/shared-types";
-import { renderInvoicePdf } from "@trade-platform/pdf";
+import { createInvoiceSchema, markInvoicePaidSchema, updateInvoiceSchema } from "@hephaste/shared-types";
+import { renderInvoicePdf } from "@hephaste/pdf";
 import { resolveAccount } from "../../middleware/tenantScope.js";
 import { prisma } from "../../lib/db.js";
 import * as invoicesRepo from "./repository.js";

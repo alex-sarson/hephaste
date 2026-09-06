@@ -1,4 +1,4 @@
-# @trade-platform/db
+# @hephaste/db
 
 Single source of truth for the domain model. Every other package/app depends on
 this one for types and the Prisma client — see the root brief, §2 and §3.
@@ -10,7 +10,7 @@ this one for types and the Prisma client — see the root brief, §2 and §3.
 cp .env.example .env   # if not already done at repo root
 pnpm db:migrate         # runs `prisma migrate dev`, creates/updates local schema
 pnpm db:generate         # regenerates the Prisma client into generated/client
-pnpm --filter @trade-platform/db seed
+pnpm --filter @hephaste/db seed
 ```
 
 ## Row-Level Security (RLS)

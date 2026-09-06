@@ -1,4 +1,4 @@
-# Trade Platform
+# Hephaste
 
 A monorepo for tracking jobs and processing invoicing for any business that
 bills clients — trades people, beauticians, artists taking commissions, and

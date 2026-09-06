@@ -3,7 +3,7 @@
 // customers — see apps/api/src/modules/jobs.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import type { JobLocationType, JobStatus } from "@trade-platform/shared-types";
+import type { JobLocationType, JobStatus } from "@hephaste/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
 import { createJob, listJobs, type Job } from "../api-client/jobs.js";

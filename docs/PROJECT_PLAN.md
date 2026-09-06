@@ -1,4 +1,4 @@
-# Trade Platform — Product & Architecture Brief
+# Hephaste — Product & Architecture Brief
 
 > **Status note:** this is the original planning brief, kept as the durable
 > reference for the product's architecture and roadmap. It describes the
@@ -14,7 +14,7 @@
 
 ## Context
 
-Independent service providers who invoice clients and need to track payment status — trades people, beauticians, artists taking commissions, and similar — currently juggle separate tools, or paper/spreadsheets, with no single place to see "what's outstanding," "what's overdue," or "what needs invoicing." The goal is a single product, `trade-platform`, usable across any of these industries, where a business owner can manage their work end-to-end and generate/send/track invoices per piece of work, from either a desktop browser or their phone.
+Independent service providers who invoice clients and need to track payment status — trades people, beauticians, artists taking commissions, and similar — currently juggle separate tools, or paper/spreadsheets, with no single place to see "what's outstanding," "what's overdue," or "what needs invoicing." The goal is a single product, `hephaste`, usable across any of these industries, where a business owner can manage their work end-to-end and generate/send/track invoices per piece of work, from either a desktop browser or their phone.
 
 The product started scoped narrowly to trades people; that scope has since broadened to any invoicing/payment-tracking business, with trades, beauty & wellness, and arts/commissions as the initial example verticals it's designed around (see §3a). The underlying domain model didn't need to change for this — only the UI vocabulary a given account sees.
 
@@ -35,7 +35,7 @@ This brief lays out the monorepo structure, domain model, invoice lifecycle, and
 **pnpm + Turborepo** for workspace management and cached build/lint/test pipelines — enough orchestration for ~6 packages without Nx's overhead.
 
 ```
-trade-platform/
+hephaste/
 ├── apps/
 │   ├── api/                  # Node.js/TypeScript backend (REST)
 │   │   src/modules/{auth,accounts,customers,jobs,invoices,email,attachments,reporting,admin}/
@@ -88,7 +88,7 @@ Every tenant-owned table carries a non-nullable, indexed `account_id` — this i
 
 The domain model above is generic enough to serve any invoicing/payment-tracking business — what's industry-specific is purely the words used for it (a trades person's "Job" is a beautician's "Appointment" is an artist's "Commission"). A required, one-time onboarding questionnaire right after account creation (before the dashboard is reachable at all) captures this:
 
-- `Account.industry`: a curated preset (`TRADES`, `BEAUTY`, `ARTS`, `OTHER`) — deliberately stored as a plain validated string, not a Postgres enum, so adding a new industry later is a code-only change (one entry in `industrySchema` + `INDUSTRY_PRESETS`, both in `@trade-platform/shared-types`), never a database migration.
+- `Account.industry`: a curated preset (`TRADES`, `BEAUTY`, `ARTS`, `OTHER`) — deliberately stored as a plain validated string, not a Postgres enum, so adding a new industry later is a code-only change (one entry in `industrySchema` + `INDUSTRY_PRESETS`, both in `@hephaste/shared-types`), never a database migration.
 - Six label columns (`jobLabelSingular`/`Plural`, `customerLabelSingular`/`Plural`, `assetLabelSingular`/`Plural`) store the *resolved* terminology directly — picking a preset just prefills these before submit, and they stay freely editable afterward (initially only from the onboarding screen; a Settings UI for editing them later is not yet built). "Asset" is the neutral third noun covering a trades person's materials, a beautician's products, or an artist's supplies.
 - `Account.onboardingCompletedAt`: `null` until the questionnaire is submitted — the sole gate the web app checks to decide whether to show onboarding instead of the normal dashboard, for any route.
 

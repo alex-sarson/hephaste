@@ -15,8 +15,8 @@
 // provider_message_id (Resend's `data.email_id`).
 import type { Request, Response } from "express";
 import { Webhook, WebhookVerificationError } from "svix";
-import type { EmailEventType } from "@trade-platform/shared-types";
-import { assertValidTransition } from "@trade-platform/invoice-engine";
+import type { EmailEventType } from "@hephaste/shared-types";
+import { assertValidTransition } from "@hephaste/invoice-engine";
 import { prisma } from "../../lib/db.js";
 
 declare global {

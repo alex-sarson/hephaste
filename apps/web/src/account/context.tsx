@@ -4,7 +4,7 @@
 // sits on top of. App.tsx uses `account?.onboardingCompletedAt` from here
 // to decide whether to show OnboardingPage.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
-import { INDUSTRY_PRESETS } from "@trade-platform/shared-types";
+import { INDUSTRY_PRESETS } from "@hephaste/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { getAccount, type Account } from "../api-client/account.js";
 

@@ -10,8 +10,8 @@ import type {
   MarkInvoicePaidInput,
   TriggerSource,
   UpdateInvoiceInput,
-} from "@trade-platform/shared-types";
-import { assertValidTransition, calculateInvoiceTotals, isOverdue } from "@trade-platform/invoice-engine";
+} from "@hephaste/shared-types";
+import { assertValidTransition, calculateInvoiceTotals, isOverdue } from "@hephaste/invoice-engine";
 import { prisma } from "../../lib/db.js";
 
 const detailInclude = {

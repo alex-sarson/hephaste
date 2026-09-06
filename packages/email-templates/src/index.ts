@@ -60,7 +60,7 @@ export function renderInvoiceSentEmail(data: InvoiceEmailData): {
             </tr>
             <tr>
               <td style="padding:20px 32px;border-top:1px solid #e4e4e7;font-size:12px;color:#a1a1aa;">
-                Sent via Trade Platform on behalf of ${escapeHtml(data.businessName)}.
+                Sent via Hephaste on behalf of ${escapeHtml(data.businessName)}.
               </td>
             </tr>
           </table>

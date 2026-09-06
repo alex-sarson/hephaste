@@ -1,5 +1,5 @@
 {
-  "name": "@trade-platform/db",
+  "name": "@hephaste/db",
   "private": true,
   "version": "0.0.0",
   "type": "module",

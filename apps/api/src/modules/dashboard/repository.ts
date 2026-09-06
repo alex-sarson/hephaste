@@ -3,8 +3,8 @@
 // recent-invoices table. Read-only and account-scoped like every other
 // repository (brief §7.2), but deliberately has no findById/create/etc. —
 // this is a single aggregate view, not a CRUD resource.
-import type { InvoiceStatus, JobStatus } from "@trade-platform/shared-types";
-import { isOverdue } from "@trade-platform/invoice-engine";
+import type { InvoiceStatus, JobStatus } from "@hephaste/shared-types";
+import { isOverdue } from "@hephaste/invoice-engine";
 import { prisma } from "../../lib/db.js";
 
 // Not `as const` — Prisma's `{ in: [...] }` filter wants a mutable array,

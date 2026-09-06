@@ -23,19 +23,19 @@ importers:
       '@clerk/backend':
         specifier: ^1.21.0
         version: 1.34.0(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(svix@1.99.1)
-      '@trade-platform/db':
+      '@hephaste/db':
         specifier: workspace:*
         version: link:../../packages/db
-      '@trade-platform/email-templates':
+      '@hephaste/email-templates':
         specifier: workspace:^
         version: link:../../packages/email-templates
-      '@trade-platform/invoice-engine':
+      '@hephaste/invoice-engine':
         specifier: workspace:*
         version: link:../../packages/invoice-engine
-      '@trade-platform/pdf':
+      '@hephaste/pdf':
         specifier: workspace:*
         version: link:../../packages/pdf
-      '@trade-platform/shared-types':
+      '@hephaste/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       cors:
@@ -90,10 +90,10 @@ importers:
       '@clerk/clerk-react':
         specifier: ^5.19.0
         version: 5.61.3(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
-      '@trade-platform/invoice-engine':
+      '@hephaste/invoice-engine':
         specifier: workspace:*
         version: link:../../packages/invoice-engine
-      '@trade-platform/shared-types':
+      '@hephaste/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       react:
@@ -170,7 +170,7 @@ importers:
 
   packages/invoice-engine:
     dependencies:
-      '@trade-platform/shared-types':
+      '@hephaste/shared-types':
         specifier: workspace:*
         version: link:../shared-types
     devDependencies:

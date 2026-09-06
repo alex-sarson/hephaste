@@ -1,5 +1,5 @@
 {
-  "name": "@trade-platform/web",
+  "name": "@hephaste/web",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@clerk/clerk-react": "^5.19.0",
-    "@trade-platform/invoice-engine": "workspace:*",
-    "@trade-platform/shared-types": "workspace:*",
+    "@hephaste/invoice-engine": "workspace:*",
+    "@hephaste/shared-types": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^7.0.0"

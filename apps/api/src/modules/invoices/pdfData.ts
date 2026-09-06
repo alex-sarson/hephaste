@@ -1,7 +1,7 @@
 // Shared by the on-demand GET /:id/pdf route and the jobs-runner's
 // SEND_INVOICE_EMAIL handler, so the Decimal->number/field-mapping logic
-// for @trade-platform/pdf's InvoicePdfData only lives in one place.
-import type { InvoicePdfData } from "@trade-platform/pdf";
+// for @hephaste/pdf's InvoicePdfData only lives in one place.
+import type { InvoicePdfData } from "@hephaste/pdf";
 
 interface AccountLike {
   businessName: string;

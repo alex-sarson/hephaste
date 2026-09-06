@@ -1,4 +1,4 @@
-import type { OnboardingRequestInput, UpdateAccountProfileInput } from "@trade-platform/shared-types";
+import type { OnboardingRequestInput, UpdateAccountProfileInput } from "@hephaste/shared-types";
 import { request } from "./client.js";
 
 export interface Account {

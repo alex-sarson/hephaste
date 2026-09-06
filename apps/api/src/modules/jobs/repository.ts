@@ -5,7 +5,7 @@ import type {
   CreateJobMaterialInput,
   JobStatus,
   UpdateJobInput,
-} from "@trade-platform/shared-types";
+} from "@hephaste/shared-types";
 import { prisma } from "../../lib/db.js";
 
 // Same split as ../invoices/repository.ts's listInclude/detailInclude: the
