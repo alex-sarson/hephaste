@@ -13,6 +13,11 @@ export const jobStatusSchema = z.enum([
 ]);
 export type JobStatus = z.infer<typeof jobStatusSchema>;
 
+// Where the work happens — generic across industries. Only ON_SITE makes
+// the job's address fields meaningful; see schema.prisma's Job model.
+export const jobLocationTypeSchema = z.enum(["ON_SITE", "REMOTE", "IN_HOUSE"]);
+export type JobLocationType = z.infer<typeof jobLocationTypeSchema>;
+
 export const invoiceStatusSchema = z.enum(["DRAFT", "SENT", "VIEWED", "PAID", "VOID"]);
 export type InvoiceStatus = z.infer<typeof invoiceStatusSchema>;
 

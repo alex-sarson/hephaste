@@ -170,20 +170,36 @@ enum JobStatus {
   CANCELLED
 }
 
+// Where the work happens — generic across industries (a trades person's
+// site visit, a beautician's home-visit vs. salon appointment, an artist
+// shipping a commission vs. working from their own studio). Determines
+// whether the address fields below mean anything: ON_SITE is the only
+// value where they do. Defaults to ON_SITE to match the original
+// trades-only assumption every existing job was created under.
+enum JobLocationType {
+  ON_SITE
+  REMOTE
+  IN_HOUSE
+}
+
 model Job {
   id         String @id @default(uuid())
   accountId  String @map("account_id")
   customerId String @map("customer_id")
 
-  title       String
-  description String?
-  status      JobStatus @default(QUOTED)
+  title        String
+  description  String?
+  status       JobStatus       @default(QUOTED)
+  locationType JobLocationType @default(ON_SITE) @map("location_type")
 
   scheduledStart DateTime? @map("scheduled_start")
   scheduledEnd   DateTime? @map("scheduled_end")
   completedAt    DateTime? @map("completed_at")
 
   // Job-site address — may differ from the customer's billing address.
+  // Only meaningful when locationType is ON_SITE; left nullable rather
+  // than enforced at the DB level so switching locationType later doesn't
+  // require clearing them.
   addressLine1 String? @map("address_line1")
   addressLine2 String? @map("address_line2")
   city         String?

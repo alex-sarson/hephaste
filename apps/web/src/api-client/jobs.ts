@@ -2,6 +2,7 @@ import type {
   CreateJobInput,
   CreateJobMaterialInput,
   InvoiceStatus,
+  JobLocationType,
   JobStatus,
   UpdateJobInput,
 } from "@trade-platform/shared-types";
@@ -12,6 +13,7 @@ export interface Job {
   title: string;
   description: string | null;
   status: JobStatus;
+  locationType: JobLocationType;
   scheduledStart: string | null;
   scheduledEnd: string | null;
   completedAt: string | null;

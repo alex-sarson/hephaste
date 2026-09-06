@@ -14,7 +14,7 @@
 // backend doesn't actually enforce.
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import type { JobStatus } from "@trade-platform/shared-types";
+import type { JobLocationType, JobStatus } from "@trade-platform/shared-types";
 import { useAuthToken } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
 import {
@@ -36,6 +36,13 @@ const STATUS_LABEL: Record<JobStatus, string> = {
   IN_PROGRESS: "In progress",
   COMPLETE: "Complete",
   CANCELLED: "Cancelled",
+};
+
+const LOCATION_OPTIONS: JobLocationType[] = ["ON_SITE", "REMOTE", "IN_HOUSE"];
+const LOCATION_LABEL: Record<JobLocationType, string> = {
+  ON_SITE: "On-site (customer's location)",
+  REMOTE: "Remote",
+  IN_HOUSE: "At our own location",
 };
 
 function money(amount: number | string): string {
@@ -67,6 +74,7 @@ export function JobDetailPage() {
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [locationType, setLocationType] = useState<JobLocationType>("ON_SITE");
   const [scheduledStart, setScheduledStart] = useState("");
   const [scheduledEnd, setScheduledEnd] = useState("");
   const [addressLine1, setAddressLine1] = useState("");
@@ -89,6 +97,7 @@ export function JobDetailPage() {
       setJob(j);
       setTitle(j.title);
       setDescription(j.description ?? "");
+      setLocationType(j.locationType);
       setScheduledStart(toLocalInputValue(j.scheduledStart));
       setScheduledEnd(toLocalInputValue(j.scheduledEnd));
       setAddressLine1(j.addressLine1 ?? "");
@@ -122,6 +131,7 @@ export function JobDetailPage() {
       await updateJob(token, job!.id, {
         title,
         description: description || undefined,
+        locationType,
         // updateJobSchema's z.coerce.date() types these as Date, not
         // string, even though the API happily coerces a JSON string too —
         // constructing the Date client-side satisfies that and serializes
@@ -260,6 +270,21 @@ export function JobDetailPage() {
             />
           </div>
 
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Location</label>
+            <div className="input">
+              <select
+                value={locationType}
+                onChange={(e) => setLocationType(e.target.value as JobLocationType)}
+                style={{ border: "none", outline: "none", background: "transparent", fontSize: 13, width: "100%" }}
+              >
+                {LOCATION_OPTIONS.map((l) => (
+                  <option key={l} value={l}>{LOCATION_LABEL[l]}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Scheduled start</label>
@@ -275,23 +300,33 @@ export function JobDetailPage() {
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-            <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Site address</label>
-            <div className="input" style={{ marginBottom: 8 }}>
-              <input placeholder="Address line 1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
-            </div>
-            <div className="input" style={{ marginBottom: 8 }}>
-              <input placeholder="Address line 2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
-            </div>
-            <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
-              <div className="input">
-                <input placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+          {locationType === "ON_SITE" ? (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Site address</label>
+              <div className="input" style={{ marginBottom: 8 }}>
+                <input placeholder="Address line 1" value={addressLine1} onChange={(e) => setAddressLine1(e.target.value)} />
               </div>
-              <div className="input">
-                <input placeholder="Postcode" value={postcode} onChange={(e) => setPostcode(e.target.value)} />
+              <div className="input" style={{ marginBottom: 8 }}>
+                <input placeholder="Address line 2" value={addressLine2} onChange={(e) => setAddressLine2(e.target.value)} />
+              </div>
+              <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 8 }}>
+                <div className="input">
+                  <input placeholder="City" value={city} onChange={(e) => setCity(e.target.value)} />
+                </div>
+                <div className="input">
+                  <input placeholder="Postcode" value={postcode} onChange={(e) => setPostcode(e.target.value)} />
+                </div>
               </div>
             </div>
-          </div>
+          ) : (
+            // Not cleared server-side on switch — just hidden, so flipping
+            // back to on-site later doesn't lose whatever was entered
+            // before. locationType alone is the source of truth for
+            // whether an address is relevant, not whether one is present.
+            <div style={{ fontSize: 12.5, color: "var(--text-faint)" }}>
+              No site address needed — this job is {LOCATION_LABEL[locationType].toLowerCase()}.
+            </div>
+          )}
 
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Notes</label>
