@@ -11,7 +11,7 @@
 //      forgotten accountId filter in application code can't leak rows.
 import type { NextFunction, Request, Response } from "express";
 import { verifyToken } from "@clerk/backend";
-import { prisma } from "../lib/db.js";
+import { prisma, withTenantScope } from "../lib/db.js";
 import { DEV_ACCOUNT_AUTH_ID, DEV_ACCOUNT_AUTH_ID_2, ensureDevAccount, isDevAuthEnabled } from "../lib/devAuth.js";
 
 declare global {
@@ -20,6 +20,18 @@ declare global {
       accountId?: string;
     }
   }
+}
+
+// Runs the rest of the request (every downstream middleware/route handler)
+// with `accountId` active for lib/db.ts's `prisma` — see withTenantScope's
+// own doc comment for why this is scope-by-id rather than one transaction
+// held open for the whole request. AsyncLocalStorage.run's context survives
+// every async continuation `next()` kicks off here (that's the whole point
+// of ALS), so this can just call `next()` directly rather than waiting on
+// the response to finish.
+function runScoped(accountId: string, req: Request, next: NextFunction): Promise<void> {
+  req.accountId = accountId;
+  return withTenantScope(accountId, async () => next());
 }
 
 /**
@@ -38,9 +50,12 @@ export async function resolveAccount(req: Request, res: Response, next: NextFunc
     // isolation tests can act as a second, genuinely different account
     // through this same middleware (src/tenantIsolation.test.ts).
     const authProviderId = req.header("x-dev-account") === "2" ? DEV_ACCOUNT_AUTH_ID_2 : DEV_ACCOUNT_AUTH_ID;
+    // Account itself carries no RLS policy (it's the tenant boundary, not
+    // tenant content — see the add_row_level_security migration), so
+    // resolving/creating it ahead of runScoped, outside any tenant
+    // transaction, is fine.
     const account = await ensureDevAccount(authProviderId);
-    req.accountId = account.id;
-    next();
+    await runScoped(account.id, req, next);
     return;
   }
 
@@ -52,6 +67,7 @@ export async function resolveAccount(req: Request, res: Response, next: NextFunc
     return;
   }
 
+  let accountId: string;
   try {
     const secretKey = process.env.CLERK_SECRET_KEY;
     if (!secretKey) {
@@ -60,6 +76,9 @@ export async function resolveAccount(req: Request, res: Response, next: NextFunc
 
     const claims = await verifyToken(token, { secretKey });
 
+    // Account itself carries no RLS policy (see runScoped's comment above),
+    // so this lookup-by-authProviderId — which can't have an accountId to
+    // scope itself with yet — is fine running unscoped.
     const account = await prisma.account.findUnique({
       where: { authProviderId: claims.sub },
       select: { id: true },
@@ -69,10 +88,16 @@ export async function resolveAccount(req: Request, res: Response, next: NextFunc
       res.status(403).json({ error: "No account provisioned for this session" });
       return;
     }
-
-    req.accountId = account.id;
-    next();
+    accountId = account.id;
   } catch (err) {
     res.status(401).json({ error: "Invalid or expired session", detail: (err as Error).message });
+    return;
   }
+
+  // Outside the try/catch above on purpose: a failure here (a downstream
+  // route handler's own error, or a genuine DB/transaction problem) is not
+  // an auth failure and must not be reported as one — it should reach
+  // Express's normal error-handling path (errorHandler.ts) via
+  // express-async-errors instead.
+  await runScoped(accountId, req, next);
 }

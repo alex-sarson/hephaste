@@ -7,7 +7,7 @@ import { fileURLToPath } from "node:url";
 import { Resend } from "resend";
 import { renderInvoicePdf } from "@hephaste/pdf";
 import { renderInvoiceSentEmail } from "@hephaste/email-templates";
-import { prisma } from "../lib/db.js";
+import { prisma, privilegedPrisma, withTenantScope } from "../lib/db.js";
 import { buildInvoicePdfData } from "../modules/invoices/pdfData.js";
 
 const POLL_INTERVAL_MS = 5000;
@@ -33,7 +33,11 @@ const resend =
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
 
 export async function detectOverdue() {
-  const result = await prisma.invoice.updateMany({
+  // Genuinely cross-tenant by design (sweeps every account's invoices in
+  // one query) — privilegedPrisma, not the RLS-scoped `prisma`, which
+  // (correctly) can't see rows outside whatever single account a
+  // transaction was scoped to. See lib/db.ts.
+  const result = await privilegedPrisma.invoice.updateMany({
     where: {
       status: { in: ["SENT", "VIEWED"] },
       overdue: false,
@@ -62,16 +66,21 @@ const OVERDUE_SWEEP_INTERVAL_MS = 24 * 60 * 60 * 1000;
  * day a real platform cron replaces this loop with a trigger endpoint call
  * instead. Not account-scoped (BackgroundJob.accountId is nullable exactly
  * for this — see schema.prisma), since detectOverdue() itself sweeps every
- * account in one query.
+ * account in one query. That nullable accountId is also why this reads
+ * and writes via privilegedPrisma rather than the RLS-scoped `prisma`: a
+ * NULL account_id row never matches any tenant's scope (`NULL = anything`
+ * is never true), so the regular per-tenant connection could neither see
+ * an existing sweep row nor insert a new one — its policy's WITH CHECK
+ * would reject the write outright.
  */
 export async function maybeScheduleOverdueSweep() {
-  const last = await prisma.backgroundJob.findFirst({
+  const last = await privilegedPrisma.backgroundJob.findFirst({
     where: { type: "DETECT_OVERDUE" },
     orderBy: { createdAt: "desc" },
   });
   if (last && (last.status === "PENDING" || last.status === "RUNNING")) return;
   if (last && Date.now() - last.createdAt.getTime() < OVERDUE_SWEEP_INTERVAL_MS) return;
-  await prisma.backgroundJob.create({ data: { type: "DETECT_OVERDUE", payload: {} } });
+  await privilegedPrisma.backgroundJob.create({ data: { type: "DETECT_OVERDUE", payload: {} } });
 }
 
 /**
@@ -89,7 +98,12 @@ export async function maybeScheduleOverdueSweep() {
  * event against and drive SENT -> VIEWED.
  */
 export async function sendInvoiceEmail(payload: { invoiceId: string }) {
-  const invoice = await prisma.invoice.findUnique({
+  // Looked up by a bare id from the job payload, before this invoice's
+  // account is known — can't be scoped to a tenant that isn't known yet,
+  // so this one lookup runs via privilegedPrisma. Everything else this
+  // function touches in the DB is scoped to invoice.accountId once it is
+  // known (below), via the regular RLS-backed `prisma`.
+  const invoice = await privilegedPrisma.invoice.findUnique({
     where: { id: payload.invoiceId },
     include: {
       customer: true,
@@ -106,9 +120,11 @@ export async function sendInvoiceEmail(payload: { invoiceId: string }) {
   // today — see the FAILED-never-retried note below — but this keeps the
   // handler correct if one gets added, or if it's ever invoked twice by
   // mistake): the SENT event for a given invoice is only ever written once.
-  const alreadySent = await prisma.emailEvent.findFirst({
-    where: { invoiceId: invoice.id, eventType: "SENT" },
-  });
+  const alreadySent = await withTenantScope(invoice.accountId, () =>
+    prisma.emailEvent.findFirst({
+      where: { invoiceId: invoice.id, eventType: "SENT" },
+    }),
+  );
   if (alreadySent) {
     console.log(`SEND_INVOICE_EMAIL: ${invoice.invoiceNumber} already has a SENT EmailEvent, skipping`);
     return;
@@ -172,23 +188,32 @@ export async function sendInvoiceEmail(payload: { invoiceId: string }) {
     );
   }
 
-  await prisma.emailEvent.create({
-    data: {
-      accountId: invoice.accountId,
-      invoiceId: invoice.id,
-      providerMessageId,
-      eventType: "SENT",
-      recipientEmail: recipientEmail ?? "unknown",
-      occurredAt: new Date(),
-    },
-  });
+  // Scoped separately from the idempotency check above rather than
+  // wrapping the whole function in one withTenantScope call — that would
+  // hold a Postgres transaction open across the PDF render and the Resend
+  // network call above, neither of which touch the DB.
+  await withTenantScope(invoice.accountId, () =>
+    prisma.emailEvent.create({
+      data: {
+        accountId: invoice.accountId,
+        invoiceId: invoice.id,
+        providerMessageId,
+        eventType: "SENT",
+        recipientEmail: recipientEmail ?? "unknown",
+        occurredAt: new Date(),
+      },
+    }),
+  );
 }
 
 async function claimNextJob() {
   // SELECT ... FOR UPDATE SKIP LOCKED pattern — see brief §10.2. Prisma
   // doesn't expose row locking directly, so this uses a raw query for the
-  // claim and the ORM for everything else.
-  const [job] = await prisma.$queryRaw<Array<{ id: string; type: string; payload: unknown }>>`
+  // claim and the ORM for everything else. privilegedPrisma: this claims
+  // the next job across ALL accounts (including nullable-accountId sweep
+  // jobs), not any one tenant's — the RLS-scoped `prisma` would only ever
+  // see an empty queue.
+  const [job] = await privilegedPrisma.$queryRaw<Array<{ id: string; type: string; payload: unknown }>>`
     UPDATE background_jobs
     SET status = 'RUNNING', attempts = attempts + 1, updated_at = now()
     WHERE id = (
@@ -217,7 +242,11 @@ async function runJob(job: { id: string; type: string; payload: unknown }) {
       default:
         throw new Error(`Unknown job type: ${job.type}`);
     }
-    await prisma.backgroundJob.update({
+    // privilegedPrisma throughout runJob/claimNextJob: queue bookkeeping is
+    // cross-tenant system code (a job here can belong to any account, or
+    // none at all — see maybeScheduleOverdueSweep), never a single
+    // request's tenant-scoped work.
+    await privilegedPrisma.backgroundJob.update({
       where: { id: job.id },
       data: { status: "SUCCEEDED" },
     });
@@ -227,7 +256,7 @@ async function runJob(job: { id: string; type: string; payload: unknown }) {
     // Fine for a stubbed send (nothing external can actually fail yet);
     // worth revisiting once this calls a real Resend API that can.
     console.error(`Job ${job.id} (${job.type}) failed:`, err);
-    await prisma.backgroundJob.update({
+    await privilegedPrisma.backgroundJob.update({
       where: { id: job.id },
       data: {
         status: "FAILED",

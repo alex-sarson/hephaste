@@ -5,7 +5,7 @@ import request from "supertest";
 import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { errorHandler } from "../../middleware/errorHandler.js";
-import { prisma } from "../../lib/db.js";
+import { privilegedPrisma } from "../../lib/db.js";
 import { ensureDevAccount } from "../../lib/devAuth.js";
 
 // The attachments routes call out to S3 (lib/storage.ts) — mocked here so
@@ -41,7 +41,7 @@ let customerId: string;
 
 beforeAll(async () => {
   const account = await ensureDevAccount();
-  const customer = await prisma.customer.create({
+  const customer = await privilegedPrisma.customer.create({
     data: { accountId: account.id, name: "Test Customer" },
   });
   customerId = customer.id;

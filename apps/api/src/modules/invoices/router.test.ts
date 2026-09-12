@@ -6,7 +6,7 @@ import { randomUUID } from "node:crypto";
 import { beforeAll, describe, expect, it } from "vitest";
 import { invoicesRouter } from "./router.js";
 import { errorHandler } from "../../middleware/errorHandler.js";
-import { prisma } from "../../lib/db.js";
+import { privilegedPrisma } from "../../lib/db.js";
 import { ensureDevAccount } from "../../lib/devAuth.js";
 
 // Real dev Postgres via the dev-auth bypass, same approach as the other
@@ -19,9 +19,9 @@ app.use(errorHandler);
 let customerId: string;
 
 async function createJob(withMaterial: boolean) {
-  const job = await prisma.job.create({ data: { accountId, customerId, title: "Test job" } });
+  const job = await privilegedPrisma.job.create({ data: { accountId, customerId, title: "Test job" } });
   if (withMaterial) {
-    await prisma.jobMaterial.create({
+    await privilegedPrisma.jobMaterial.create({
       data: { jobId: job.id, accountId, description: "Consumer unit", quantity: 2, unitCost: 50 },
     });
   }
@@ -33,7 +33,7 @@ let accountId: string;
 beforeAll(async () => {
   const account = await ensureDevAccount();
   accountId = account.id;
-  const customer = await prisma.customer.create({ data: { accountId, name: "Test Customer" } });
+  const customer = await privilegedPrisma.customer.create({ data: { accountId, name: "Test Customer" } });
   customerId = customer.id;
 });
 
@@ -105,7 +105,7 @@ describe("invoice lifecycle", () => {
     // work is deferred to the jobs-runner (brief §9) — verify /send
     // enqueues that, not that it happened (see
     // jobs-runner/sendInvoiceEmail.test.ts for the handler itself).
-    const enqueued = await prisma.backgroundJob.findFirst({
+    const enqueued = await privilegedPrisma.backgroundJob.findFirst({
       where: { type: "SEND_INVOICE_EMAIL", payload: { equals: { invoiceId: id } } },
     });
     expect(enqueued).not.toBeNull();
@@ -173,7 +173,7 @@ describe("email send status + retry", () => {
     // job — these tests don't run the real jobs-runner process, so its
     // outcome is faked directly rather than waiting on a poll loop that
     // isn't running.
-    await prisma.backgroundJob.updateMany({
+    await privilegedPrisma.backgroundJob.updateMany({
       where: { type: "SEND_INVOICE_EMAIL", payload: { equals: { invoiceId: id } } },
       data: { status: "FAILED", lastError: "Resend rejected: the domain is invalid" },
     });
@@ -187,7 +187,7 @@ describe("email send status + retry", () => {
     // Now simulate that retry succeeding — the FAILED job stays FAILED,
     // but it's no longer the *latest* one, so the derived status should
     // read from the newer SUCCEEDED job instead.
-    await prisma.backgroundJob.updateMany({
+    await privilegedPrisma.backgroundJob.updateMany({
       where: { type: "SEND_INVOICE_EMAIL", payload: { equals: { invoiceId: id } }, status: "PENDING" },
       data: { status: "SUCCEEDED" },
     });
