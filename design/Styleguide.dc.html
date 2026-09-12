@@ -10,18 +10,18 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Public+Sans:wght@400;500;600;700&display=swap">
 <style>
 :root{
-  --bg:oklch(97.3% 0.008 75);
-  --surface:oklch(99% 0.003 80);
-  --border:oklch(88.5% 0.013 70);
-  --border-soft:oklch(92.5% 0.01 72);
-  --text:oklch(24% 0.02 50);
-  --text-muted:oklch(46% 0.02 55);
-  --text-faint:oklch(63% 0.014 60);
-  --accent:oklch(62% 0.16 45);
-  --accent-hover:oklch(55% 0.17 42);
-  --accent-soft:oklch(93% 0.035 55);
-  --accent-soft-text:oklch(40% 0.12 40);
-  --on-accent:oklch(99% 0.006 70);
+  --bg:oklch(97.5% 0.014 85);
+  --surface:oklch(99% 0.006 85);
+  --border:oklch(87% 0.02 78);
+  --border-soft:oklch(92% 0.015 80);
+  --text:oklch(24% 0.02 70);
+  --text-muted:oklch(46% 0.02 70);
+  --text-faint:oklch(63% 0.016 72);
+  --accent:oklch(58% 0.13 80);
+  --accent-hover:oklch(52% 0.14 78);
+  --accent-soft:oklch(92% 0.045 82);
+  --accent-soft-text:oklch(38% 0.1 75);
+  --on-accent:oklch(99% 0.01 85);
   --green-bg:oklch(93% 0.05 145); --green-text:oklch(40% 0.13 145);
   --blue-bg:oklch(93% 0.03 250); --blue-text:oklch(45% 0.12 250);
   --teal-bg:oklch(92% 0.035 200); --teal-text:oklch(42% 0.11 200);
@@ -54,25 +54,25 @@ body{margin:0;font-family:var(--font-body);color:var(--text);-webkit-font-smooth
   <div style="display:flex;flex-direction:column;gap:14px;">
     <div class="section-label">Neutrals</div>
     <div style="display:flex;gap:16px;">
-      <div><div class="swatch" style="background:oklch(97.3% 0.008 75);"></div><div class="swatch-label">Background</div><div class="swatch-value">oklch(97.3% .008 75)</div></div>
-      <div><div class="swatch" style="background:oklch(99% 0.003 80);"></div><div class="swatch-label">Surface</div><div class="swatch-value">oklch(99% .003 80)</div></div>
-      <div><div class="swatch" style="background:oklch(95.3% 0.01 75);"></div><div class="swatch-label">Surface alt</div><div class="swatch-value">oklch(95.3% .01 75)</div></div>
-      <div><div class="swatch" style="background:oklch(88.5% 0.013 70);"></div><div class="swatch-label">Border</div><div class="swatch-value">oklch(88.5% .013 70)</div></div>
-      <div><div class="swatch" style="background:oklch(63% 0.014 60);"></div><div class="swatch-label">Text faint</div><div class="swatch-value">oklch(63% .014 60)</div></div>
-      <div><div class="swatch" style="background:oklch(46% 0.02 55);"></div><div class="swatch-label">Text muted</div><div class="swatch-value">oklch(46% .02 55)</div></div>
-      <div><div class="swatch" style="background:oklch(24% 0.02 50);"></div><div class="swatch-label" style="color:oklch(99% 0 0);">Text</div><div class="swatch-value">oklch(24% .02 50)</div></div>
-      <div><div class="swatch" style="background:oklch(21% 0.017 50);"></div><div class="swatch-label" style="color:oklch(99% 0 0);">Sidebar</div><div class="swatch-value">oklch(21% .017 50)</div></div>
+      <div><div class="swatch" style="background:oklch(97.5% 0.014 85);"></div><div class="swatch-label">Background</div><div class="swatch-value">oklch(97.5% .014 85)</div></div>
+      <div><div class="swatch" style="background:oklch(99% 0.006 85);"></div><div class="swatch-label">Surface</div><div class="swatch-value">oklch(99% .006 85)</div></div>
+      <div><div class="swatch" style="background:oklch(95% 0.018 82);"></div><div class="swatch-label">Surface alt</div><div class="swatch-value">oklch(95% .018 82)</div></div>
+      <div><div class="swatch" style="background:oklch(87% 0.02 78);"></div><div class="swatch-label">Border</div><div class="swatch-value">oklch(87% .02 78)</div></div>
+      <div><div class="swatch" style="background:oklch(63% 0.016 72);"></div><div class="swatch-label">Text faint</div><div class="swatch-value">oklch(63% .016 72)</div></div>
+      <div><div class="swatch" style="background:oklch(46% 0.02 70);"></div><div class="swatch-label">Text muted</div><div class="swatch-value">oklch(46% .02 70)</div></div>
+      <div><div class="swatch" style="background:oklch(24% 0.02 70);"></div><div class="swatch-label">Text</div><div class="swatch-value">oklch(24% .02 70)</div></div>
+      <div><div class="swatch" style="background:oklch(92% 0.02 78);"></div><div class="swatch-label">Sidebar</div><div class="swatch-value">oklch(92% .02 78)</div></div>
     </div>
   </div>
 
   <!-- Accent -->
   <div style="display:flex;flex-direction:column;gap:14px;">
-    <div class="section-label">Accent — rust</div>
+    <div class="section-label">Accent — gold</div>
     <div style="display:flex;gap:16px;">
-      <div><div class="swatch" style="background:oklch(62% 0.16 45);"></div><div class="swatch-label">Accent</div><div class="swatch-value">oklch(62% .16 45)</div></div>
-      <div><div class="swatch" style="background:oklch(55% 0.17 42);"></div><div class="swatch-label">Accent hover</div><div class="swatch-value">oklch(55% .17 42)</div></div>
-      <div><div class="swatch" style="background:oklch(93% 0.035 55);"></div><div class="swatch-label">Accent soft</div><div class="swatch-value">oklch(93% .035 55)</div></div>
-      <div><div class="swatch" style="background:oklch(40% 0.12 40);"></div><div class="swatch-label" style="color:oklch(99% 0 0);">Accent soft text</div><div class="swatch-value">oklch(40% .12 40)</div></div>
+      <div><div class="swatch" style="background:oklch(58% 0.13 80);"></div><div class="swatch-label">Accent</div><div class="swatch-value">oklch(58% .13 80)</div></div>
+      <div><div class="swatch" style="background:oklch(52% 0.14 78);"></div><div class="swatch-label">Accent hover</div><div class="swatch-value">oklch(52% .14 78)</div></div>
+      <div><div class="swatch" style="background:oklch(92% 0.045 82);"></div><div class="swatch-label">Accent soft</div><div class="swatch-value">oklch(92% .045 82)</div></div>
+      <div><div class="swatch" style="background:oklch(38% 0.1 75);"></div><div class="swatch-label">Accent soft text</div><div class="swatch-value">oklch(38% .1 75)</div></div>
     </div>
   </div>
 
@@ -151,7 +151,7 @@ body{margin:0;font-family:var(--font-body);color:var(--text);-webkit-font-smooth
   <div style="display:flex;flex-direction:column;gap:10px;padding-top:8px;border-top:1px solid var(--border);">
     <div class="section-label">Layout principles</div>
     <div style="font-size:13px;color:var(--text-muted);line-height:1.8;">
-      240px dark sidebar, fixed · 32/40px page padding · 20–28px gaps between cards · 14px card radius, 8px control radius, 999px pill radius · status is always a dot + label pill, never a left-border stripe · numbers are tabular and right-aligned in tables · one accent color used sparingly for primary actions and active states only.
+      240px sidebar, fixed · 32/40px page padding · 20–28px gaps between cards · 14px card radius, 8px control radius, 999px pill radius · status is always a dot + label pill, never a left-border stripe · numbers are tabular and right-aligned in tables · one accent color used sparingly for primary actions and active states only.
     </div>
   </div>
 

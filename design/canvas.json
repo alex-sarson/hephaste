@@ -4,7 +4,17 @@
     { "file": "Jobs.dc.html", "x": 1540, "y": 0, "w": 1440, "h": 960, "title": "Jobs" },
     { "file": "Invoices.dc.html", "x": 0, "y": 1450, "w": 1440, "h": 1080, "title": "Invoice detail" },
     { "file": "Customers.dc.html", "x": 1540, "y": 1450, "w": 1440, "h": 820, "title": "Customers" },
-    { "file": "Styleguide.dc.html", "x": 0, "y": 2700, "w": 1240, "h": 1980, "title": "Design system" }
+    { "file": "Styleguide.dc.html", "x": 0, "y": 2700, "w": 1240, "h": 1980, "title": "Design system" },
+    { "file": "LogoOptions.dc.html", "x": 0, "y": 0, "w": 1600, "h": 1050, "title": "Logo options", "page": "rebrand" },
+    { "file": "Gold.dc.html", "x": 0, "y": 1180, "w": 1440, "h": 1300, "title": "Gold colourway", "page": "rebrand" },
+    { "file": "Silver.dc.html", "x": 1540, "y": 1180, "w": 1440, "h": 1300, "title": "Silver colourway", "page": "rebrand" },
+    { "file": "Bronze.dc.html", "x": 3080, "y": 1180, "w": 1440, "h": 1300, "title": "Bronze colourway", "page": "rebrand" },
+    { "file": "GoldSubtle.dc.html", "x": 0, "y": 2600, "w": 1440, "h": 1300, "title": "Gold colourway (subtle)", "page": "rebrand" },
+    { "file": "BronzeSubtle.dc.html", "x": 3080, "y": 2600, "w": 1440, "h": 1300, "title": "Bronze colourway (subtle)", "page": "rebrand" }
   ],
-  "launch": { "view": "canvas" }
+  "pages": [
+    { "id": "page-1", "name": "Product design" },
+    { "id": "rebrand", "name": "Hephaste rebrand" }
+  ],
+  "launch": { "view": "canvas", "page": "page-1" }
 }
