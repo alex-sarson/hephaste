@@ -31,6 +31,7 @@ const as2 = {
   get: (url: string) => request(app).get(url).set("x-dev-account", "2"),
   post: (url: string) => request(app).post(url).set("x-dev-account", "2"),
   patch: (url: string) => request(app).patch(url).set("x-dev-account", "2"),
+  delete: (url: string) => request(app).delete(url).set("x-dev-account", "2"),
 };
 
 async function createCustomer() {
@@ -103,6 +104,14 @@ describe("GET /api/dashboard/summary", () => {
     const res = await as2.get("/api/dashboard/summary");
     expect(res.body.upcomingJobsCount).toBeGreaterThanOrEqual(1);
     expect(res.body.upcomingJobs.some((j: { jobId: string }) => j.jobId === job.body.id)).toBe(true);
+
+    // upcomingJobs is capped at 5 (see repository.ts) — this test's own
+    // dev account is shared and never reset between runs (see this file's
+    // header comment), so leaving this job behind eventually crowds out
+    // the assertion above for every future run. Soft-deleting it here is
+    // what actually keeps this test passing reliably long-term, not just
+    // today.
+    await as2.delete(`/api/jobs/${job.body.id}`);
   });
 
   it("returns zeroed aggregates for an account with no data yet", async () => {

@@ -17,8 +17,14 @@
 // database has been created/migrated for it to redirect to.
 import "./src/env.js";
 
-if (!process.env.CI && process.env.DATABASE_URL) {
-  const url = new URL(process.env.DATABASE_URL);
-  url.pathname = `${url.pathname}_test`;
-  process.env.DATABASE_URL = url.toString();
+if (!process.env.CI) {
+  // Both connections (see lib/db.ts's privilegedPrisma vs the RLS-scoped
+  // `prisma`) need the same redirect — a test hitting only one of the two
+  // would otherwise silently touch the real dev database on the other.
+  for (const key of ["DATABASE_URL", "APP_DATABASE_URL"] as const) {
+    if (!process.env[key]) continue;
+    const url = new URL(process.env[key]!);
+    url.pathname = `${url.pathname}_test`;
+    process.env[key] = url.toString();
+  }
 }

@@ -12,7 +12,7 @@ import { Webhook } from "svix";
 import { beforeAll, describe, expect, it } from "vitest";
 import { handleResendWebhook } from "./webhooks.js";
 import { errorHandler } from "../../middleware/errorHandler.js";
-import { prisma } from "../../lib/db.js";
+import { privilegedPrisma, withTenantScope } from "../../lib/db.js";
 import { ensureDevAccount } from "../../lib/devAuth.js";
 import * as invoicesRepo from "../invoices/repository.js";
 
@@ -54,25 +54,30 @@ let customerId: string;
 beforeAll(async () => {
   const account = await ensureDevAccount();
   accountId = account.id;
-  const customer = await prisma.customer.create({
+  const customer = await privilegedPrisma.customer.create({
     data: { accountId, name: "Webhook Test Customer", email: "webhook-test@example.test" },
   });
   customerId = customer.id;
 });
 
+// invoicesRepo.create/update/transition reach for the RLS-scoped `prisma`
+// internally — fine from a real request (already inside withTenantScope
+// via resolveAccount), but this helper calls them directly.
 async function createSentInvoice() {
-  const job = await prisma.job.create({ data: { accountId, customerId, title: "Job for webhook test" } });
-  const invoice = await invoicesRepo.create(accountId, job.id);
-  if (!invoice) throw new Error("setup failed");
-  await invoicesRepo.update(accountId, invoice.id, {
-    lineItems: [{ description: "Labour", type: "LABOUR", quantity: 1, unitPrice: 50, sortOrder: 0 }],
+  const job = await privilegedPrisma.job.create({ data: { accountId, customerId, title: "Job for webhook test" } });
+  return withTenantScope(accountId, async () => {
+    const invoice = await invoicesRepo.create(accountId, job.id);
+    if (!invoice) throw new Error("setup failed");
+    await invoicesRepo.update(accountId, invoice.id, {
+      lineItems: [{ description: "Labour", type: "LABOUR", quantity: 1, unitPrice: 50, sortOrder: 0 }],
+    });
+    await invoicesRepo.transition(accountId, invoice.id, "SENT", "MANUAL_USER");
+    return invoice.id;
   });
-  await invoicesRepo.transition(accountId, invoice.id, "SENT", "MANUAL_USER");
-  return invoice.id;
 }
 
 async function recordSentEvent(invoiceId: string, emailId: string) {
-  await prisma.emailEvent.create({
+  await privilegedPrisma.emailEvent.create({
     data: {
       accountId,
       invoiceId,
@@ -132,7 +137,7 @@ describe("POST /api/webhooks/resend", () => {
     });
     expect(opened.status).toBe(200);
 
-    const invoice = await prisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
+    const invoice = await privilegedPrisma.invoice.findUniqueOrThrow({ where: { id: invoiceId } });
     expect(invoice.status).toBe("VIEWED");
     expect(invoice.firstViewedAt).not.toBeNull();
 
@@ -145,7 +150,7 @@ describe("POST /api/webhooks/resend", () => {
     });
     expect(openedAgain.status).toBe(200);
 
-    const events = await prisma.emailEvent.findMany({ where: { invoiceId, eventType: "OPENED" } });
+    const events = await privilegedPrisma.emailEvent.findMany({ where: { invoiceId, eventType: "OPENED" } });
     expect(events).toHaveLength(2);
   });
 
@@ -166,7 +171,7 @@ describe("POST /api/webhooks/resend", () => {
     expect(redelivered.status).toBe(200);
     expect(redelivered.body.deduped).toBe(true);
 
-    const events = await prisma.emailEvent.findMany({ where: { invoiceId, eventType: "BOUNCED" } });
+    const events = await privilegedPrisma.emailEvent.findMany({ where: { invoiceId, eventType: "BOUNCED" } });
     expect(events).toHaveLength(1);
   });
 });
