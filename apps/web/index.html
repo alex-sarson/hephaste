@@ -3,7 +3,16 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#2a2019" />
+    <!-- Gold Subtle colourway (design/GoldSubtle.dc.html) — kept in sync
+         with vite.config.ts's manifest.theme_color by hand, since the two
+         can't share a value at build time. -->
+    <meta name="theme-color" content="#a27000" />
+    <!-- iOS ignores the web manifest for home-screen install metadata —
+         these three are the standard stand-ins. -->
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link

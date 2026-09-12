@@ -90,15 +90,15 @@ export function CustomersPage() {
         <form
           onSubmit={handleSubmit}
           className="card"
-          style={{ padding: 20, display: "flex", gap: 12, alignItems: "flex-end", marginBottom: 20 }}
+          style={{ padding: 20, display: "flex", flexWrap: "wrap", gap: 12, alignItems: "flex-end", marginBottom: 20 }}
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 180 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Name</label>
             <div className="input">
               <input value={name} onChange={(e) => setName(e.target.value)} required />
             </div>
           </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 180 }}>
             <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Email (optional)</label>
             <div className="input">
               <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
@@ -114,7 +114,7 @@ export function CustomersPage() {
         <div style={{ marginBottom: 16, fontSize: 13, color: "var(--red-text)" }}>{error}</div>
       )}
 
-      <div className="input" style={{ width: 320, marginBottom: 20 }}>
+      <div className="input" style={{ width: "100%", maxWidth: 320, marginBottom: 20 }}>
         <SearchIcon style={{ color: "var(--text-faint)" }} />
         <input placeholder={`Search ${terminology.customer.plural.toLowerCase()}`} />
       </div>

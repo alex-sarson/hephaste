@@ -96,6 +96,13 @@ button {
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-lg);
   box-shadow: var(--shadow-sm);
+  /* Grid/flex items default to min-width:auto, so a card containing a
+     wide scrollable child (see .table-scroll) would otherwise be pushed
+     to that child's min-content width instead of clipping it — this is
+     what actually makes .table-scroll's overflow-x:auto take effect
+     rather than the whole card (and its parent grid) growing past the
+     viewport. */
+  min-width: 0;
 }
 
 .btn-primary {
@@ -202,4 +209,159 @@ button {
 }
 .input input::placeholder {
   color: var(--text-faint);
+}
+
+/* Responsive app shell (AppShell.tsx) — a fixed 240px sidebar plain-inline-
+   style layout doesn't leave anything usable on a phone, so this is a CSS
+   class rather than inline style specifically so it can carry a media
+   query. Desktop: sidebar + main side by side, topbar unused. Below the
+   breakpoint: sidebar becomes an off-canvas drawer (hidden by default,
+   toggled from React state), with a topbar carrying the hamburger. */
+.app-shell {
+  display: flex;
+  min-height: 100%;
+  background: var(--bg);
+}
+.app-sidebar {
+  width: 240px;
+  flex-shrink: 0;
+  background: var(--sidebar-bg);
+  border-right: 1px solid var(--border-soft);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 16px;
+  gap: 4px;
+}
+.app-main {
+  flex: 1;
+  min-width: 0;
+  padding: 32px 40px;
+}
+.app-topbar {
+  display: none;
+}
+.app-sidebar-overlay {
+  display: none;
+}
+.app-drawer-close {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .app-shell {
+    display: block;
+  }
+  .app-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 56px;
+    padding: 0 16px;
+    background: var(--sidebar-bg);
+    border-bottom: 1px solid var(--border-soft);
+    position: sticky;
+    top: 0;
+    z-index: 40;
+  }
+  .app-topbar button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    background: none;
+    border: none;
+    color: var(--sidebar-text);
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .app-sidebar {
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 50;
+    transform: translateX(-100%);
+    transition: transform 0.2s ease;
+  }
+  .app-sidebar.open {
+    transform: translateX(0);
+    box-shadow: var(--shadow-md);
+  }
+  .app-drawer-close {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .app-sidebar-overlay.open {
+    display: block;
+    position: fixed;
+    inset: 0;
+    background: oklch(0% 0 0 / 0.4);
+    z-index: 45;
+  }
+  .app-main {
+    padding: 20px 16px;
+  }
+}
+
+/* Shared two-column "detail + sidebar" layout (job/invoice detail pages,
+   the dashboard's needs-invoicing/upcoming split) — stacks to one column
+   below the breakpoint rather than squeezing a 1fr sidebar column down to
+   nothing. */
+.two-col-layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: 24px;
+}
+.two-col-layout > * {
+  /* Same min-width:auto gotcha as .card — a column holding a wide
+     scrollable child shouldn't be able to stretch its own grid track
+     past the fr size this layout intends. */
+  min-width: 0;
+}
+@media (max-width: 720px) {
+  .two-col-layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Dashboard's 4-up stat cards — 2-up on tablet, 1-up on phone. */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 20px;
+}
+@media (max-width: 720px) {
+  .stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 480px) {
+  .stat-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* A pair of form fields side by side (scheduled start/end, city/postcode,
+   ...) — stacks below the phone breakpoint rather than squeezing two
+   inputs into ~170px each. */
+.field-pair {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 480px) {
+  .field-pair {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Wraps a fixed-column-width "table" (built from CSS-grid rows, not a real
+   <table>) so it scrolls horizontally on a narrow screen instead of
+   crushing every column unreadably. min-width on the rows keeps them from
+   ever going narrower than they were designed for; this container is what
+   makes that scrollable rather than overflowing the page. */
+.table-scroll {
+  overflow-x: auto;
 }
