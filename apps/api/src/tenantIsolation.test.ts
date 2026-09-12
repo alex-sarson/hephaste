@@ -6,9 +6,13 @@
 // chain — not a repository-layer unit test, so a bug in a route handler
 // itself (not just the repository function it calls) would be caught too.
 //
-// This only tests the app layer (accountId-scoped repository functions).
-// The DB-layer backstop (Postgres RLS) described alongside it in brief §7
-// doesn't exist yet — see docs/PROJECT_PLAN.md.
+// Exercises both layers described in brief §7, not just the app one:
+// tenantScope.ts's resolveAccount now runs every request through
+// lib/db.ts's withTenantScope, so these requests hit the real Postgres RLS
+// policies too (see packages/db/README.md) — a repository function that
+// "forgot" its accountId filter would still be caught here, by the DB
+// layer rather than the app layer. src/rls.test.ts checks the DB layer in
+// isolation, with the app-layer accountId checks bypassed entirely.
 import "./env.js";
 import "express-async-errors";
 import express from "express";

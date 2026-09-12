@@ -1,7 +1,7 @@
 import "../env.js";
 import { beforeAll, describe, expect, it } from "vitest";
 import { sendInvoiceEmail } from "./index.js";
-import { prisma } from "../lib/db.js";
+import { privilegedPrisma, withTenantScope } from "../lib/db.js";
 import { ensureDevAccount } from "../lib/devAuth.js";
 import * as invoicesRepo from "../modules/invoices/repository.js";
 
@@ -11,21 +11,27 @@ let customerId: string;
 beforeAll(async () => {
   const account = await ensureDevAccount();
   accountId = account.id;
-  const customer = await prisma.customer.create({
+  const customer = await privilegedPrisma.customer.create({
     data: { accountId, name: "Send Test Customer", email: "customer@example.test" },
   });
   customerId = customer.id;
 });
 
+// invoicesRepo.create/update/transition all reach for the RLS-scoped
+// `prisma` internally — fine when called from a real request (already
+// inside withTenantScope via resolveAccount), but this helper calls them
+// directly, so it needs to open that scope itself.
 async function createSentInvoice() {
-  const job = await prisma.job.create({ data: { accountId, customerId, title: "Job for send test" } });
-  const invoice = await invoicesRepo.create(accountId, job.id);
-  if (!invoice) throw new Error("setup failed: invoice not created");
-  await invoicesRepo.update(accountId, invoice.id, {
-    lineItems: [{ description: "Labour", type: "LABOUR", quantity: 1, unitPrice: 100, sortOrder: 0 }],
+  const job = await privilegedPrisma.job.create({ data: { accountId, customerId, title: "Job for send test" } });
+  return withTenantScope(accountId, async () => {
+    const invoice = await invoicesRepo.create(accountId, job.id);
+    if (!invoice) throw new Error("setup failed: invoice not created");
+    await invoicesRepo.update(accountId, invoice.id, {
+      lineItems: [{ description: "Labour", type: "LABOUR", quantity: 1, unitPrice: 100, sortOrder: 0 }],
+    });
+    await invoicesRepo.transition(accountId, invoice.id, "SENT", "MANUAL_USER");
+    return invoice.id;
   });
-  await invoicesRepo.transition(accountId, invoice.id, "SENT", "MANUAL_USER");
-  return invoice.id;
 }
 
 describe("sendInvoiceEmail", () => {
@@ -34,7 +40,7 @@ describe("sendInvoiceEmail", () => {
 
     await sendInvoiceEmail({ invoiceId });
 
-    const event = await prisma.emailEvent.findFirst({ where: { invoiceId, eventType: "SENT" } });
+    const event = await privilegedPrisma.emailEvent.findFirst({ where: { invoiceId, eventType: "SENT" } });
     expect(event).not.toBeNull();
     expect(event!.recipientEmail).toBe("customer@example.test");
     expect(event!.providerMessageId).toBe(`dev-stub-${invoiceId}`);
@@ -46,7 +52,7 @@ describe("sendInvoiceEmail", () => {
     await sendInvoiceEmail({ invoiceId });
     await sendInvoiceEmail({ invoiceId });
 
-    const events = await prisma.emailEvent.findMany({ where: { invoiceId, eventType: "SENT" } });
+    const events = await privilegedPrisma.emailEvent.findMany({ where: { invoiceId, eventType: "SENT" } });
     expect(events).toHaveLength(1);
   });
 

@@ -17,7 +17,7 @@ import type { Request, Response } from "express";
 import { Webhook, WebhookVerificationError } from "svix";
 import type { EmailEventType } from "@hephaste/shared-types";
 import { assertValidTransition } from "@hephaste/invoice-engine";
-import { prisma } from "../../lib/db.js";
+import { prisma, privilegedPrisma, withTenantScope } from "../../lib/db.js";
 
 declare global {
   namespace Express {
@@ -95,9 +95,14 @@ export async function handleResendWebhook(req: Request, res: Response) {
   const recipientEmail = payload.data.to?.[0] ?? "unknown";
   const providerMessageId = payload.data.email_id;
 
+  // Both lookups below are cross-tenant by construction — the caller is
+  // Resend, correlating by its own opaque email_id, with no accountId to
+  // scope to until the second lookup resolves one. privilegedPrisma, not
+  // the RLS-scoped `prisma` (see lib/db.ts).
+
   // Idempotency: Resend/Svix can redeliver the same webhook. Dedupe on the
   // natural key before doing anything else.
-  const existing = await prisma.emailEvent.findFirst({
+  const existing = await privilegedPrisma.emailEvent.findFirst({
     where: { providerMessageId, eventType, occurredAt },
   });
   if (existing) {
@@ -108,7 +113,7 @@ export async function handleResendWebhook(req: Request, res: Response) {
   // Correlate back to the invoice this message was sent for. The send job
   // (jobs-runner) must have already written an EmailEvent with
   // eventType SENT carrying this email_id for this lookup to succeed.
-  const sentEvent = await prisma.emailEvent.findFirst({
+  const sentEvent = await privilegedPrisma.emailEvent.findFirst({
     where: { providerMessageId, eventType: "SENT" },
     select: { accountId: true, invoiceId: true },
   });
@@ -121,7 +126,10 @@ export async function handleResendWebhook(req: Request, res: Response) {
     return;
   }
 
-  await prisma.$transaction(async (tx) => {
+  // The account is known now — everything from here on is genuinely
+  // tenant-scoped, so it runs through the same RLS-backed path a normal
+  // request would (see lib/db.ts's withTenantScope).
+  await withTenantScope(sentEvent.accountId, () => prisma.$transaction(async (tx) => {
     await tx.emailEvent.create({
       data: {
         accountId: sentEvent.accountId,
@@ -167,7 +175,7 @@ export async function handleResendWebhook(req: Request, res: Response) {
     // BOUNCED intentionally does NOT change invoice status (a bounce
     // doesn't mean unpaid vs paid) — see brief §9.3. The UI surfaces a
     // warning banner by querying EmailEvent directly (Phase 1).
-  });
+  }));
 
   res.status(200).json({ ok: true });
 }

@@ -24,6 +24,11 @@ jobs:
           --health-retries 5
     env:
       DATABASE_URL: "postgresql://hephaste:hephaste@localhost:5432/hephaste"
+      # Non-owner role the add_row_level_security migration creates —
+      # every per-request query runs through this connection (see
+      # apps/api/src/lib/db.ts), so FORCE ROW LEVEL SECURITY actually
+      # applies. Same dev-only credential the migration itself hardcodes.
+      APP_DATABASE_URL: "postgresql://hephaste_app:hephaste_app@localhost:5432/hephaste"
       # Enables the local-only dev-auth bypass (apps/api/src/lib/devAuth.ts)
       # for integration tests that hit a real Postgres — never set in a
       # deployed environment; devAuth.ts also refuses to activate it when
