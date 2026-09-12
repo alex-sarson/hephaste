@@ -63,7 +63,7 @@ function Field({
   required?: boolean;
 }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1 }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: 6, flex: 1, minWidth: 140 }}>
       <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>{label}</label>
       <div className="input">
         <input type={type} value={value} onChange={(e) => onChange(e.target.value)} required={required} />
@@ -139,7 +139,7 @@ export function SettingsPage() {
 
       <form onSubmit={handleSubmit}>
         <Section title="Business details">
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             <Field label="Business name" value={form.businessName} onChange={(v) => set("businessName", v)} required />
             <Field label="Contact email" value={form.contactEmail} type="email" onChange={(v) => set("contactEmail", v)} required />
             <Field label="Contact phone" value={form.contactPhone ?? ""} onChange={(v) => set("contactPhone", v)} />
@@ -147,11 +147,11 @@ export function SettingsPage() {
         </Section>
 
         <Section title="Address">
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             <Field label="Address line 1" value={form.addressLine1 ?? ""} onChange={(v) => set("addressLine1", v)} />
             <Field label="Address line 2" value={form.addressLine2 ?? ""} onChange={(v) => set("addressLine2", v)} />
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             <Field label="City" value={form.city ?? ""} onChange={(v) => set("city", v)} />
             <Field label="Postcode" value={form.postcode ?? ""} onChange={(v) => set("postcode", v)} />
             <Field label="Country" value={form.country ?? ""} onChange={(v) => set("country", v)} />
@@ -159,7 +159,7 @@ export function SettingsPage() {
         </Section>
 
         <Section title="Invoicing">
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             <Field label="Invoice number prefix" value={form.invoiceNumberPrefix} onChange={(v) => set("invoiceNumberPrefix", v)} required />
             <Field label="Default tax rate (e.g. 0.2 for 20%)" value={form.defaultTaxRate} type="number" onChange={(v) => set("defaultTaxRate", v)} required />
             <Field label="Currency" value={form.currency} onChange={(v) => set("currency", v)} required />
@@ -171,7 +171,7 @@ export function SettingsPage() {
           <div style={{ fontSize: 12, color: "var(--text-faint)", marginTop: -8 }}>
             Display-only — printed on invoice PDFs. No payment processing is performed against these.
           </div>
-          <div style={{ display: "flex", gap: 12 }}>
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
             <Field label="Account name" value={form.bankAccountName ?? ""} onChange={(v) => set("bankAccountName", v)} />
             <Field label="Sort code" value={form.bankSortCode ?? ""} onChange={(v) => set("bankSortCode", v)} />
             <Field label="Account number" value={form.bankAccountNumber ?? ""} onChange={(v) => set("bankAccountNumber", v)} />

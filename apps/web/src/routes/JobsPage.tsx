@@ -178,8 +178,8 @@ export function JobsPage() {
 
       {error && <div style={{ marginBottom: 16, fontSize: 13, color: "var(--red-text)" }}>{error}</div>}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-        <div className="input" style={{ width: 280 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
+        <div className="input" style={{ width: "100%", maxWidth: 280 }}>
           <SearchIcon style={{ color: "var(--text-faint)" }} />
           <input placeholder={`Search ${terminology.job.plural.toLowerCase()} or ${terminology.customer.plural.toLowerCase()}`} />
         </div>
@@ -198,10 +198,12 @@ export function JobsPage() {
       </div>
 
       <div className="card" style={{ padding: "8px 24px 4px 24px" }}>
+        <div className="table-scroll">
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "2fr 1fr 1fr 1.3fr 32px",
+            minWidth: 640,
             padding: "12px 4px",
             borderBottom: "1px solid var(--border)",
             fontSize: 11.5,
@@ -235,6 +237,7 @@ export function JobsPage() {
             style={{
               display: "grid",
               gridTemplateColumns: "2fr 1fr 1fr 1.3fr 32px",
+              minWidth: 640,
               alignItems: "center",
               padding: "13px 4px",
               borderBottom: i < visibleJobs.length - 1 ? "1px solid var(--border-soft)" : undefined,
@@ -274,6 +277,7 @@ export function JobsPage() {
             </div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );

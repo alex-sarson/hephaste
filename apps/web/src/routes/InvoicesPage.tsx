@@ -160,8 +160,8 @@ export function InvoicesPage() {
 
       {error && <div style={{ marginBottom: 16, fontSize: 13, color: "var(--red-text)" }}>{error}</div>}
 
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-        <div className="input" style={{ width: 280 }}>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", flexWrap: "wrap", gap: 16, marginBottom: 20 }}>
+        <div className="input" style={{ width: "100%", maxWidth: 280 }}>
           <SearchIcon style={{ color: "var(--text-faint)" }} />
           <input placeholder={`Search invoices or ${terminology.customer.plural.toLowerCase()}`} />
         </div>
@@ -180,10 +180,12 @@ export function InvoicesPage() {
       </div>
 
       <div className="card" style={{ padding: "8px 24px 4px 24px" }}>
+        <div className="table-scroll">
         <div
           style={{
             display: "grid",
             gridTemplateColumns: "110px 1.6fr 0.9fr 0.9fr 0.9fr 32px",
+            minWidth: 640,
             padding: "12px 4px",
             borderBottom: "1px solid var(--border)",
             fontSize: 11.5,
@@ -218,6 +220,7 @@ export function InvoicesPage() {
             style={{
               display: "grid",
               gridTemplateColumns: "110px 1.6fr 0.9fr 0.9fr 0.9fr 32px",
+              minWidth: 640,
               alignItems: "center",
               padding: "13px 4px",
               borderBottom: i < visible.length - 1 ? "1px solid var(--border-soft)" : undefined,
@@ -237,6 +240,7 @@ export function InvoicesPage() {
             </div>
           </div>
         ))}
+        </div>
       </div>
     </div>
   );
