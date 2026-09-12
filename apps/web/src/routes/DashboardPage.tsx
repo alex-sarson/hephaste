@@ -139,7 +139,7 @@ export function DashboardPage() {
         }
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "repeat(4, minmax(0,1fr))", gap: 20, marginBottom: 24 }}>
+      <div className="stat-grid" style={{ marginBottom: 24 }}>
         <StatCard
           label="Outstanding"
           value={formatMoney(summary.outstanding.total)}
@@ -172,7 +172,7 @@ export function DashboardPage() {
         />
       </div>
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, marginBottom: 24 }}>
+      <div className="two-col-layout" style={{ marginBottom: 24 }}>
         <div className="card" style={{ padding: "20px 24px" }}>
           <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
             <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 15 }}>Needs invoicing</div>
@@ -249,53 +249,59 @@ export function DashboardPage() {
           </a>
         </div>
 
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "110px 1.4fr 0.9fr 0.9fr 0.9fr",
-            padding: "0 4px 10px 4px",
-            borderBottom: "1px solid var(--border)",
-            fontSize: 11.5,
-            fontWeight: 600,
-            color: "var(--text-faint)",
-            textTransform: "uppercase",
-            letterSpacing: "0.03em",
-          }}
-        >
-          <div>Invoice</div>
-          <div>Customer</div>
-          <div>Amount</div>
-          <div>Due</div>
-          <div>Status</div>
-        </div>
-
         {summary.recentInvoices.length === 0 && (
           <div style={{ padding: "16px 4px", fontSize: 13, color: "var(--text-faint)" }}>No invoices yet.</div>
         )}
 
-        {summary.recentInvoices.map((invoice, i) => (
-          <div
-            key={invoice.id}
-            style={{
-              display: "grid",
-              gridTemplateColumns: "110px 1.4fr 0.9fr 0.9fr 0.9fr",
-              alignItems: "center",
-              padding: "12px 4px",
-              borderBottom: i < summary.recentInvoices.length - 1 ? "1px solid var(--border-soft)" : undefined,
-              fontSize: 13,
-              cursor: "pointer",
-            }}
-            onClick={() => navigate(`/invoices/${invoice.id}`)}
-          >
-            <div style={{ fontWeight: 600 }}>{invoice.invoiceNumber}</div>
-            <div>{invoice.customerName}</div>
-            <div style={{ fontVariantNumeric: "tabular-nums" }}>{formatMoney(invoice.total)}</div>
-            <div style={{ color: "var(--text-muted)" }}>{formatDue(invoice.dueDate)}</div>
-            <div>
-              <InvoiceStatusBadge status={invoice.status} overdue={invoice.overdue} />
+        {summary.recentInvoices.length > 0 && (
+          <div className="table-scroll">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "110px 1.4fr 0.9fr 0.9fr 0.9fr",
+                minWidth: 640,
+                padding: "0 4px 10px 4px",
+                borderBottom: "1px solid var(--border)",
+                fontSize: 11.5,
+                fontWeight: 600,
+                color: "var(--text-faint)",
+                textTransform: "uppercase",
+                letterSpacing: "0.03em",
+              }}
+            >
+              <div>Invoice</div>
+              <div>Customer</div>
+              <div>Amount</div>
+              <div>Due</div>
+              <div>Status</div>
             </div>
+
+            {summary.recentInvoices.map((invoice, i) => (
+              <div
+                key={invoice.id}
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "110px 1.4fr 0.9fr 0.9fr 0.9fr",
+                  minWidth: 640,
+                  alignItems: "center",
+                  padding: "12px 4px",
+                  borderBottom: i < summary.recentInvoices.length - 1 ? "1px solid var(--border-soft)" : undefined,
+                  fontSize: 13,
+                  cursor: "pointer",
+                }}
+                onClick={() => navigate(`/invoices/${invoice.id}`)}
+              >
+                <div style={{ fontWeight: 600 }}>{invoice.invoiceNumber}</div>
+                <div>{invoice.customerName}</div>
+                <div style={{ fontVariantNumeric: "tabular-nums" }}>{formatMoney(invoice.total)}</div>
+                <div style={{ color: "var(--text-muted)" }}>{formatDue(invoice.dueDate)}</div>
+                <div>
+                  <InvoiceStatusBadge status={invoice.status} overdue={invoice.overdue} />
+                </div>
+              </div>
+            ))}
           </div>
-        ))}
+        )}
       </div>
     </div>
   );

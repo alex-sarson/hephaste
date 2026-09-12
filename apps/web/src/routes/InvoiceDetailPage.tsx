@@ -240,8 +240,8 @@ export function InvoiceDetailPage() {
 
   return (
     <div>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12, marginBottom: 24 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
           <a href="#" onClick={(e) => { e.preventDefault(); navigate("/invoices"); }} style={{ fontSize: 13, color: "var(--text-muted)", fontWeight: 600 }}>
             Invoices
           </a>
@@ -249,7 +249,7 @@ export function InvoiceDetailPage() {
           <div style={{ fontFamily: "var(--font-display)", fontWeight: 600, fontSize: 20 }}>{invoice.invoiceNumber}</div>
           <InvoiceStatusBadge status={invoice.status} overdue={invoice.overdue} />
         </div>
-        <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+        <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
           <button className="btn-secondary" onClick={handleDownloadPdf} disabled={downloadingPdf}>
             <DownloadIcon />
             {downloadingPdf ? "Preparing…" : "Download PDF"}
@@ -294,7 +294,7 @@ export function InvoiceDetailPage() {
         </form>
       )}
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, alignItems: "start" }}>
+      <div className="two-col-layout" style={{ alignItems: "start" }}>
         {/* Invoice document */}
         <div className="card" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 22 }}>
           <div style={{ display: "flex", justifyContent: "space-between" }}>
@@ -339,10 +339,12 @@ export function InvoiceDetailPage() {
           </div>
 
           <div>
+            <div className="table-scroll">
             <div
               style={{
                 display: "grid",
                 gridTemplateColumns: isDraft ? "0.8fr 3fr 0.7fr 0.9fr 0.9fr 24px" : "0.8fr 3fr 0.7fr 0.9fr 0.9fr",
+                minWidth: 560,
                 padding: "0 4px 8px 4px",
                 borderBottom: "1px solid var(--border)",
                 fontSize: 11,
@@ -366,6 +368,7 @@ export function InvoiceDetailPage() {
                 style={{
                   display: "grid",
                   gridTemplateColumns: isDraft ? "0.8fr 3fr 0.7fr 0.9fr 0.9fr 24px" : "0.8fr 3fr 0.7fr 0.9fr 0.9fr",
+                  minWidth: 560,
                   alignItems: "center",
                   padding: "8px 4px",
                   borderBottom: "1px solid var(--border-soft)",
@@ -422,6 +425,7 @@ export function InvoiceDetailPage() {
                 )}
               </div>
             ))}
+            </div>
 
             {isDraft && (
               <button

@@ -372,7 +372,7 @@ export function JobDetailPage() {
 
       {error && <div style={{ marginBottom: 16, fontSize: 13, color: "var(--red-text)" }}>{error}</div>}
 
-      <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 24, alignItems: "start" }}>
+      <div className="two-col-layout" style={{ alignItems: "start" }}>
         {/* Details */}
         <form onSubmit={handleSave} className="card" style={{ padding: 28, display: "flex", flexDirection: "column", gap: 20 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
@@ -392,7 +392,7 @@ export function JobDetailPage() {
             />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+          <div className="field-pair">
             <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <label style={{ fontSize: 12, fontWeight: 600, color: "var(--text-muted)" }}>Scheduled start</label>
               <div className="input">

@@ -1,23 +1,39 @@
 // The 240px dark sidebar + main content shell — see design/Main.dc.html and
 // design/Styleguide.dc.html's "Layout principles". Every authenticated
 // route renders inside this.
-import type { ReactNode } from "react";
+//
+// Below tokens.css's 860px breakpoint the sidebar becomes an off-canvas
+// drawer (closed by default) instead of squeezing 240px of fixed-width
+// sidebar onto a phone screen — see .app-shell/.app-sidebar there for the
+// actual responsive rules; the state here just toggles the `.open` class
+// and closes automatically on navigation.
+import { useEffect, useState, type ReactNode } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { UserButton } from "@clerk/clerk-react";
 import { isDevAuth } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
 import {
   BrandMark,
+  CloseIcon,
   CustomersIcon,
   DashboardIcon,
   InvoicesIcon,
   JobsIcon,
+  MenuIcon,
   SettingsIcon,
 } from "./icons.js";
 
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const terminology = useTerminology();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // Closing on every route change (rather than requiring an explicit tap
+  // on the overlay/nav link) matches how a mobile drawer nav is expected
+  // to behave — picking a destination should always dismiss it.
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [location.pathname]);
 
   const navItems = [
     { to: "/", label: "Dashboard", icon: DashboardIcon },
@@ -27,24 +43,16 @@ export function AppShell({ children }: { children: ReactNode }) {
   ];
 
   return (
-    <div style={{ display: "flex", minHeight: "100%", background: "var(--bg)" }}>
-      <aside
-        style={{
-          width: 240,
-          flexShrink: 0,
-          background: "var(--sidebar-bg)",
-          borderRight: "1px solid var(--border-soft)",
-          display: "flex",
-          flexDirection: "column",
-          padding: "24px 16px",
-          gap: 4,
-        }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 8px 24px 8px" }}>
+    <div className="app-shell">
+      <div className="app-topbar">
+        <button type="button" onClick={() => setDrawerOpen(true)} aria-label="Open menu">
+          <MenuIcon />
+        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
           <div
             style={{
-              width: 32,
-              height: 32,
+              width: 26,
+              height: 26,
               borderRadius: 999,
               background: "var(--accent)",
               display: "flex",
@@ -53,19 +61,57 @@ export function AppShell({ children }: { children: ReactNode }) {
               flexShrink: 0,
             }}
           >
-            <BrandMark />
+            <BrandMark width={15} height={15} />
           </div>
-          <div
-            style={{
-              fontFamily: "var(--font-display)",
-              fontWeight: 700,
-              fontSize: 16,
-              color: "var(--text)",
-              letterSpacing: "-0.01em",
-            }}
-          >
+          <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 15, color: "var(--text)" }}>
             Hephaste
           </div>
+        </div>
+      </div>
+
+      <div className={`app-sidebar-overlay${drawerOpen ? " open" : ""}`} onClick={() => setDrawerOpen(false)} />
+
+      <aside className={`app-sidebar${drawerOpen ? " open" : ""}`}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "6px 8px 24px 8px" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+            <div
+              style={{
+                width: 32,
+                height: 32,
+                borderRadius: 999,
+                background: "var(--accent)",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flexShrink: 0,
+              }}
+            >
+              <BrandMark />
+            </div>
+            <div
+              style={{
+                fontFamily: "var(--font-display)",
+                fontWeight: 700,
+                fontSize: 16,
+                color: "var(--text)",
+                letterSpacing: "-0.01em",
+              }}
+            >
+              Hephaste
+            </div>
+          </div>
+          {/* Only reachable when the drawer is open (mobile) — hidden by
+              the desktop layout's fixed sidebar having no overlay/topbar
+              to close in the first place. */}
+          <button
+            type="button"
+            onClick={() => setDrawerOpen(false)}
+            aria-label="Close menu"
+            className="app-drawer-close"
+            style={{ background: "none", border: "none", color: "var(--sidebar-text)", cursor: "pointer", padding: 4 }}
+          >
+            <CloseIcon />
+          </button>
         </div>
 
         {navItems.map(({ to, label, icon: Icon }) => {
@@ -134,7 +180,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main style={{ flex: 1, minWidth: 0, padding: "32px 40px" }}>{children}</main>
+      <main className="app-main">{children}</main>
     </div>
   );
 }

@@ -15,18 +15,23 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.ico"],
+      includeAssets: ["favicon.ico", "apple-touch-icon.png"],
       manifest: {
         name: "Hephaste",
         short_name: "Hephaste",
         description: "Manage jobs, clients, and invoicing in one place",
-        theme_color: "#2a2019",
-        background_color: "#f7f4f0",
+        // Gold Subtle colourway (design/GoldSubtle.dc.html) — --accent and
+        // --bg converted to hex, since manifest parsers can't be counted
+        // on to understand oklch() the way a modern browser's CSS engine
+        // can.
+        theme_color: "#a27000",
+        background_color: "#fbf6ec",
         display: "standalone",
         start_url: "/",
         icons: [
-          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
-          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },
+          { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png", purpose: "any" },
+          { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png", purpose: "any" },
+          { src: "/icons/icon-512-maskable.png", sizes: "512x512", type: "image/png", purpose: "maskable" },
         ],
       },
     }),
