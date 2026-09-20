@@ -17,6 +17,9 @@ build/
 .env.*.local
 !.env.example
 
+# Local infra started by `pnpm dev` (Postgres data, SeaweedFS data + binary, logs)
+.dev/
+
 # Prisma
 packages/db/generated/
 

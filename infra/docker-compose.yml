@@ -1,3 +1,7 @@
+# Optional: `pnpm dev` (scripts/dev.mjs) starts equivalent Postgres + S3 storage
+# on its own without Docker, and reuses these if they are already running.
+# Note: the seaweedfs service has not been exercised — there is no Docker on
+# the machine this was written on; `pnpm dev` runs the same `weed mini`.
 name: hephaste
 
 services:
@@ -18,19 +22,20 @@ services:
       retries: 5
 
   # Local S3-compatible storage standing in for Cloudflare R2 in dev — see
-  # brief §12. Console at http://localhost:9001 (minioadmin/minioadmin).
-  minio:
-    image: minio/minio:latest
-    command: server /data --console-address ":9001"
+  # brief §12. `weed mini` seeds its identity and bucket from the same env
+  # names the AWS SDK reads; keep them in step with S3_* in .env.
+  seaweedfs:
+    image: chrislusf/seaweedfs:latest
+    command: mini -dir=/data
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      AWS_ACCESS_KEY_ID: hephaste
+      AWS_SECRET_ACCESS_KEY: hephaste-dev-secret
+      S3_BUCKET: hephaste-dev
     ports:
-      - "9000:9000"
-      - "9001:9001"
+      - "8333:8333"
     volumes:
-      - minio-data:/data
+      - seaweedfs-data:/data
 
 volumes:
   postgres-data:
-  minio-data:
+  seaweedfs-data:

@@ -54,7 +54,7 @@ hephaste/
 │   ├── pdf/                  # invoice PDF rendering
 │   └── config/               # shared eslint/tsconfig
 ├── infra/
-│   ├── docker-compose.yml    # local Postgres, S3-local (MinIO), email sandbox
+│   ├── docker-compose.yml    # optional containerised Postgres + S3-local (SeaweedFS); `pnpm dev` (scripts/dev.mjs) runs both natively
 │   └── terraform/ (or platform-specific config)
 ├── .github/workflows/{ci,deploy}.yml
 ├── turbo.json / pnpm-workspace.yaml
@@ -176,4 +176,4 @@ Sized small deliberately: managed Postgres with automated backups/PITR (non-nego
 
 ## Verification
 
-Once scaffolded: `pnpm install && docker compose up -d` (local Postgres), `pnpm --filter db prisma migrate dev`, `pnpm dev` to run API + web together, then manually walk the critical path (sign up → create customer → create job → create invoice → send → confirm Resend sandbox delivery → simulate webhook → confirm status flips to `viewed`). CI (`turbo run lint typecheck test`) should pass, with the tenant-isolation and invoice-engine test suites treated as release-blocking from day one.
+Once scaffolded: `pnpm install && pnpm dev` (starts local Postgres and S3-compatible storage, applies migrations, and runs API + jobs-runner + web together), then manually walk the critical path (sign up → create customer → create job → create invoice → send → confirm Resend sandbox delivery → simulate webhook → confirm status flips to `viewed`). CI (`turbo run lint typecheck test`) should pass, with the tenant-isolation and invoice-engine test suites treated as release-blocking from day one.
