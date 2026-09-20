@@ -267,10 +267,20 @@ async function runJob(job: { id: string; type: string; payload: unknown }) {
 }
 
 async function pollLoop() {
-  await maybeScheduleOverdueSweep();
-  const job = await claimNextJob();
-  if (job) {
-    await runJob(job);
+  try {
+    await maybeScheduleOverdueSweep();
+    const job = await claimNextJob();
+    if (job) {
+      await runJob(job);
+    }
+  } catch (err) {
+    // A failure here is the poll itself (most likely the database being
+    // briefly unreachable), not a job — runJob already catches and records
+    // its own failures on the BackgroundJob row. Left unhandled this became
+    // an unhandled rejection that killed the whole worker permanently on
+    // the first hiccup; logging and carrying on means it recovers by itself
+    // as soon as the database is back.
+    console.error("jobs-runner poll failed, will retry:", (err as Error).message.split("\n").filter(Boolean).pop());
   }
   setTimeout(pollLoop, POLL_INTERVAL_MS);
 }
