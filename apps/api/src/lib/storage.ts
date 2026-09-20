@@ -1,5 +1,5 @@
-// S3-compatible object storage — MinIO locally, Cloudflare R2 in prod (see
-// brief §12 and infra/docker-compose.yml). Kept as a thin, mockable wrapper
+// S3-compatible object storage — SeaweedFS locally (started by
+// scripts/dev.mjs), Cloudflare R2 in prod (see brief §12). Kept as a thin, mockable wrapper
 // around the AWS SDK (`vi.mock("../../lib/storage.js")` in tests) so the
 // attachments routes never make a real network call in the test suite —
 // same isolation principle as the jobs-runner boundary around Resend.
@@ -27,8 +27,8 @@ function s3(): S3Client {
     client = new S3Client({
       endpoint: process.env.S3_ENDPOINT,
       region: process.env.S3_REGION ?? "auto",
-      // Required for MinIO (bucket.host style URLs need real DNS); harmless
-      // for R2, which supports path-style too.
+      // Required for local S3 emulators (bucket.host style URLs need real
+      // DNS); harmless for R2, which supports path-style too.
       forcePathStyle: true,
       credentials: {
         accessKeyId: process.env.S3_ACCESS_KEY_ID ?? "",
@@ -59,7 +59,7 @@ export async function deleteObject(key: string): Promise<void> {
 }
 
 // Attachments are stored in a private bucket (no public-read policy set up
-// for either MinIO or R2 here), so downloads go through a short-lived
+// for either SeaweedFS or R2 here), so downloads go through a short-lived
 // presigned URL rather than a permanent public link. An hour rather than a
 // few minutes: the same URL now also backs an inline thumbnail that stays
 // on screen for as long as the job detail page is open, not just a single
