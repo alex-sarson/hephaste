@@ -12,11 +12,13 @@ import { Link, useLocation } from "react-router-dom";
 import { UserButton } from "@clerk/clerk-react";
 import { isDevAuth } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
+import { useAdmin } from "../admin/useAdmin.js";
 import {
   BrandMark,
   CloseIcon,
   CustomersIcon,
   DashboardIcon,
+  FileIcon,
   InvoicesIcon,
   JobsIcon,
   MenuIcon,
@@ -26,6 +28,7 @@ import {
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const terminology = useTerminology();
+  const admin = useAdmin();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Closing on every route change (rather than requiring an explicit tap
@@ -130,6 +133,37 @@ export function AppShell({ children }: { children: ReactNode }) {
           <SettingsIcon />
           Settings
         </Link>
+
+        {admin && (
+          <>
+            <div style={{ height: 1, background: "oklch(0% 0 0 / 0.08)", margin: "12px 4px" }} />
+            <div
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.05em",
+                textTransform: "uppercase",
+                color: "var(--sidebar-text-muted)",
+                padding: "0 12px 4px",
+              }}
+            >
+              Admin
+            </div>
+            <Link
+              to="/admin"
+              className={`navlink${location.pathname === "/admin" || location.pathname.startsWith("/admin/accounts") ? " active" : ""}`}
+            >
+              <CustomersIcon />
+              Accounts
+            </Link>
+            {admin.role === "SUPERADMIN" && (
+              <Link to="/admin/audit" className={`navlink${location.pathname === "/admin/audit" ? " active" : ""}`}>
+                <FileIcon />
+                Audit log
+              </Link>
+            )}
+          </>
+        )}
 
         <div
           style={{

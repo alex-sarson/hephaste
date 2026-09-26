@@ -69,13 +69,12 @@ yourself, use `pnpm dev:apps`.
 
 ## Status
 
-Phase 0 (scaffolding) — see the brief's §13 roadmap. The `customers` module
-in `apps/api/src/modules/customers` is a fully wired reference
-implementation of the tenant-scoped repository pattern (brief §7.2); `jobs`
-and `invoices` are stubs following the same pattern, to be filled in during
-Phase 1. The required industry onboarding questionnaire (brief §3a) is
-implemented end-to-end — signing in for the first time gates on it before
-the dashboard is reachable.
+Phase 1 (MVP) is feature-complete — see the brief's §13 roadmap: customers,
+jobs (materials, attachments), invoices (line items, tax, PDF, email send and
+delivery tracking, overdue detection), the dashboard, the required industry
+onboarding questionnaire (brief §3a), Postgres row-level security, the PWA,
+and a minimal admin console at `/admin` (account list, per-account summary,
+audit log, invoice-email retry). Phase 2 and the accounting phase are next.
 
 ## License
 

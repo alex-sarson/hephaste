@@ -79,8 +79,11 @@ export async function getEmailSendStatus(accountId: string, invoiceId: string): 
     },
     orderBy: { createdAt: "desc" },
   });
-  if (!job) return null;
+  return job ? toEmailSendInfo(job) : null;
+}
 
+/** Maps a SEND_INVOICE_EMAIL BackgroundJob row to what the UI shows. Shared with the admin console's support view. */
+export function toEmailSendInfo(job: { status: string; lastError: string | null; updatedAt: Date }): EmailSendInfo {
   const status: EmailSendStatus = job.status === "FAILED" ? "FAILED" : job.status === "SUCCEEDED" ? "SENT" : "SENDING";
   return { status, lastError: status === "FAILED" ? job.lastError : null, updatedAt: job.updatedAt };
 }

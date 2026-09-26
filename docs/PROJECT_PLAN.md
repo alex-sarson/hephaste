@@ -113,6 +113,8 @@ Business rules live in `packages/invoice-engine` as pure, heavily unit-tested fu
 
 Admins support the *product*, not the account holder's work: view account list/metadata (job/invoice counts, billing status) for support; **cannot** browse an account's customers/jobs/invoice content by default. A "view as account" capability exists only as an explicit, time-boxed, logged break-glass action (`AdminAuditLog`) — the standard SaaS support pattern.
 
+**Built (minimal admin console, `/admin` in `apps/web`):** account list with usage counts, a per-account support summary (counts and states only — every view is written to `AdminAuditLog`), a SUPERADMIN-only audit-log viewer, and a support action to retry a failed invoice email (also audited). The database role behind it (`hephaste_admin`, `ADMIN_DATABASE_URL`) is granted only metadata columns, so tenant content is unreadable to admin code at the Postgres level. Not built yet: the break-glass "view as account" grant, and admin sign-in through the separate admin Clerk instance in the web app (the API verifies admin tokens against `CLERK_ADMIN_SECRET_KEY`, but `apps/web` has a single `ClerkProvider`, so outside the dev-auth bypass the Admin section stays hidden until that's wired or the console moves to its own app).
+
 Architecturally: `Admin` is a fully separate auth identity from `Account` (separate Clerk app/instance or a small internal `apps/admin-web`), admin routes never set the tenant RLS session variable, and a separate `admin_service` Postgres role (`BYPASSRLS`) is used only for the logged metadata/impersonation paths — never for normal tenant traffic.
 
 ## 6. Feature Scope
@@ -162,9 +164,10 @@ Sized small deliberately: managed Postgres with automated backups/PITR (non-nego
 ## 13. Phased Roadmap
 
 - **Phase 0 (scaffolding)** — ✅ done: monorepo skeleton, full Prisma schema up front (cheap to write once, painful to bolt on piecemeal), Clerk wired in (plus a local dev-auth bypass), CI running on the repo. The `customers` module is the fully wired reference implementation of the tenant-scoped repository pattern; `jobs` and `invoices` are stubs following the same pattern. A design system (dashboard, jobs, invoice detail, customers, style guide) has been drafted and partially implemented in `apps/web`.
-- **Phase 1 (MVP)**: build order — account setup → customers → jobs (+ materials/attachments) → invoice creation/line items/tax (engine tests first) → PDF → Resend send + job runner → webhook ingestion → overdue sweep → dashboard → tenant-isolation tests + RLS → PWA polish → minimal admin view.
+- **Phase 1 (MVP)** — ✅ done: build order — account setup → customers → jobs (+ materials/attachments) → invoice creation/line items/tax (engine tests first) → PDF → Resend send + job runner → webhook ingestion → overdue sweep → dashboard → tenant-isolation tests + RLS → PWA polish → minimal admin view.
 - **Phase 2**: reminders, reporting, branding, notifications, CSV export, quotes.
-- **Phase 3+**: payments, multi-user accounts, offline-first, native app, credit notes/multi-currency — revisit only with real demand.
+- **Phase 3 (accounting)**: expenses (with recurring series), supplier payments and contracts, subscription tracker, wages/people-payments records, and profit & loss reporting on both paid and accrued bases with a paid-vs-projected-accrued profit graph filterable by year/quarter/month. No bank connection. Planned in detail; not started.
+- **Phase 4+**: payments, multi-user accounts, offline-first, native app, credit notes/multi-currency — revisit only with real demand.
 
 ### Critical files to create first
 - `packages/db/schema.prisma` — the domain model and RLS migration anchor point.
