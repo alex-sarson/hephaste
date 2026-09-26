@@ -12,6 +12,7 @@ import { InvoiceDetailPage } from "./routes/InvoiceDetailPage.js";
 import { CustomersPage } from "./routes/CustomersPage.js";
 import { SettingsPage } from "./routes/SettingsPage.js";
 import { OnboardingPage } from "./routes/OnboardingPage.js";
+import { AdminGate } from "./admin/context.js";
 import { AdminAccountsPage } from "./routes/admin/AdminAccountsPage.js";
 import { AdminAccountPage } from "./routes/admin/AdminAccountPage.js";
 import { AdminAuditPage } from "./routes/admin/AdminAuditPage.js";
@@ -43,7 +44,15 @@ function SignedOutScreen() {
         <BrandMark width={22} height={22} />
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22 }}>Hephaste</div>
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            fontSize: 22,
+          }}
+        >
+          Hephaste
+        </div>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", marginTop: 6 }}>
           Sign in to view your dashboard.
         </p>
@@ -63,12 +72,15 @@ export function App() {
   // path shows the onboarding questionnaire instead of the normal app —
   // checked before rendering any Route so there's no way to deep-link
   // around it.
-  const needsOnboarding = isSignedIn && !loading && account && account.onboardingCompletedAt === null;
+  const needsOnboarding =
+    isSignedIn && !loading && account && account.onboardingCompletedAt === null;
 
   return (
     <BrowserRouter>
       {!isSignedIn && <SignedOutScreen />}
-      {isSignedIn && loading && <div style={{ minHeight: "100%", background: "var(--bg)" }} />}
+      {isSignedIn && loading && (
+        <div style={{ minHeight: "100%", background: "var(--bg)" }} />
+      )}
       {isSignedIn && !loading && needsOnboarding && <OnboardingPage />}
       {isSignedIn && !loading && !needsOnboarding && (
         <AppShell>
@@ -80,12 +92,33 @@ export function App() {
             <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
-            {/* Reachable only in effect for admins: the API rejects these
-                pages' calls for anyone else, and AppShell only links here
-                when GET /admin/me succeeds. */}
-            <Route path="/admin" element={<AdminAccountsPage />} />
-            <Route path="/admin/accounts/:id" element={<AdminAccountPage />} />
-            <Route path="/admin/audit" element={<AdminAuditPage />} />
+            {/* Permission-level gated: AdminGate sends anyone without an admin
+                role (or without the role a page needs) back to the
+                dashboard, and the API enforces the same on every call. */}
+            <Route
+              path="/admin"
+              element={
+                <AdminGate>
+                  <AdminAccountsPage />
+                </AdminGate>
+              }
+            />
+            <Route
+              path="/admin/accounts/:id"
+              element={
+                <AdminGate>
+                  <AdminAccountPage />
+                </AdminGate>
+              }
+            />
+            <Route
+              path="/admin/audit"
+              element={
+                <AdminGate roles={["SUPERADMIN"]}>
+                  <AdminAuditPage />
+                </AdminGate>
+              }
+            />
           </Routes>
         </AppShell>
       )}
