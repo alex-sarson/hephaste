@@ -11,6 +11,16 @@ import { PrismaClient, type Prisma } from "@hephaste/db";
 // The restricted, non-owner role (hephaste_app locally) — every
 // per-request query ends up here, via the `prisma` export below. This is
 // the connection FORCE ROW LEVEL SECURITY is a real backstop against.
+//
+// Fails loudly when APP_DATABASE_URL is unset: PrismaClient given no URL
+// silently falls back to DATABASE_URL — the table-owning role — which
+// bypasses RLS entirely, so a missing variable would quietly turn the
+// isolation backstop off (CI once ran the RLS tests exactly that way, because
+// turbo's strict env mode dropped the variable, and they failed only by
+// happenstance).
+if (!process.env.APP_DATABASE_URL) {
+  throw new Error("APP_DATABASE_URL is not set — see .env.example (falling back to the owner role would disable RLS)");
+}
 const restrictedPrisma = new PrismaClient({
   datasourceUrl: process.env.APP_DATABASE_URL,
 });
