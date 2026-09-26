@@ -16,6 +16,7 @@
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "admin:grant": "pnpm --filter @hephaste/api admin:grant",
     "db:generate": "pnpm --filter @hephaste/db generate",
     "db:migrate": "pnpm --filter @hephaste/db migrate:dev",
     "db:studio": "pnpm --filter @hephaste/db studio"

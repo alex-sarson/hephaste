@@ -12,7 +12,7 @@ import { Link, useLocation } from "react-router-dom";
 import { UserButton } from "@clerk/clerk-react";
 import { isDevAuth } from "../auth/context.js";
 import { useTerminology } from "../account/context.js";
-import { useAdmin } from "../admin/useAdmin.js";
+import { useAdmin } from "../admin/context.js";
 import {
   BrandMark,
   CloseIcon,
@@ -28,7 +28,7 @@ import {
 export function AppShell({ children }: { children: ReactNode }) {
   const location = useLocation();
   const terminology = useTerminology();
-  const admin = useAdmin();
+  const { admin } = useAdmin();
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   // Closing on every route change (rather than requiring an explicit tap
