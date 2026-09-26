@@ -6,10 +6,16 @@ import { AppShell } from "./components/AppShell.js";
 import { BrandMark } from "./components/icons.js";
 import { DashboardPage } from "./routes/DashboardPage.js";
 import { JobsPage } from "./routes/JobsPage.js";
+import { JobDetailPage } from "./routes/JobDetailPage.js";
 import { InvoicesPage } from "./routes/InvoicesPage.js";
+import { InvoiceDetailPage } from "./routes/InvoiceDetailPage.js";
 import { CustomersPage } from "./routes/CustomersPage.js";
 import { SettingsPage } from "./routes/SettingsPage.js";
 import { OnboardingPage } from "./routes/OnboardingPage.js";
+import { AdminGate } from "./admin/context.js";
+import { AdminAccountsPage } from "./routes/admin/AdminAccountsPage.js";
+import { AdminAccountPage } from "./routes/admin/AdminAccountPage.js";
+import { AdminAuditPage } from "./routes/admin/AdminAuditPage.js";
 
 function SignedOutScreen() {
   return (
@@ -28,7 +34,7 @@ function SignedOutScreen() {
         style={{
           width: 44,
           height: 44,
-          borderRadius: 10,
+          borderRadius: 999,
           background: "var(--accent)",
           display: "flex",
           alignItems: "center",
@@ -38,7 +44,15 @@ function SignedOutScreen() {
         <BrandMark width={22} height={22} />
       </div>
       <div style={{ textAlign: "center" }}>
-        <div style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 22 }}>Trade Platform</div>
+        <div
+          style={{
+            fontFamily: "var(--font-display)",
+            fontWeight: 700,
+            fontSize: 22,
+          }}
+        >
+          Hephaste
+        </div>
         <p style={{ fontSize: 13.5, color: "var(--text-muted)", marginTop: 6 }}>
           Sign in to view your dashboard.
         </p>
@@ -58,21 +72,53 @@ export function App() {
   // path shows the onboarding questionnaire instead of the normal app —
   // checked before rendering any Route so there's no way to deep-link
   // around it.
-  const needsOnboarding = isSignedIn && !loading && account && account.onboardingCompletedAt === null;
+  const needsOnboarding =
+    isSignedIn && !loading && account && account.onboardingCompletedAt === null;
 
   return (
     <BrowserRouter>
       {!isSignedIn && <SignedOutScreen />}
-      {isSignedIn && loading && <div style={{ minHeight: "100%", background: "var(--bg)" }} />}
+      {isSignedIn && loading && (
+        <div style={{ minHeight: "100%", background: "var(--bg)" }} />
+      )}
       {isSignedIn && !loading && needsOnboarding && <OnboardingPage />}
       {isSignedIn && !loading && !needsOnboarding && (
         <AppShell>
           <Routes>
             <Route path="/" element={<DashboardPage />} />
             <Route path="/jobs" element={<JobsPage />} />
+            <Route path="/jobs/:id" element={<JobDetailPage />} />
             <Route path="/invoices" element={<InvoicesPage />} />
+            <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            {/* Permission-level gated: AdminGate sends anyone without an admin
+                role (or without the role a page needs) back to the
+                dashboard, and the API enforces the same on every call. */}
+            <Route
+              path="/admin"
+              element={
+                <AdminGate>
+                  <AdminAccountsPage />
+                </AdminGate>
+              }
+            />
+            <Route
+              path="/admin/accounts/:id"
+              element={
+                <AdminGate>
+                  <AdminAccountPage />
+                </AdminGate>
+              }
+            />
+            <Route
+              path="/admin/audit"
+              element={
+                <AdminGate roles={["SUPERADMIN"]}>
+                  <AdminAuditPage />
+                </AdminGate>
+              }
+            />
           </Routes>
         </AppShell>
       )}

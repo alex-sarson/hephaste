@@ -3,7 +3,7 @@ import "../../env.js";
 import "express-async-errors";
 import express from "express";
 import request from "supertest";
-import { beforeAll, describe, expect, it } from "vitest";
+import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { accountRouter } from "./router.js";
 import { errorHandler } from "../../middleware/errorHandler.js";
 import { prisma } from "../../lib/db.js";
@@ -62,5 +62,43 @@ describe("PATCH /api/account/me/terminology", () => {
     expect(second.status).toBe(200);
     expect(second.body.onboardingCompletedAt).toBe(firstCompletedAt);
     expect(second.body.jobLabelSingular).toBe("Booking");
+  });
+});
+
+describe("PATCH /api/account/me", () => {
+  it("updates the invoice number prefix and other profile fields", async () => {
+    const res = await request(app).patch("/api/account/me").send({
+      invoiceNumberPrefix: "QUOTE-",
+      defaultTaxRate: 0.15,
+      businessName: "Renamed Co.",
+    });
+    expect(res.status).toBe(200);
+    expect(res.body.invoiceNumberPrefix).toBe("QUOTE-");
+    expect(res.body.defaultTaxRate).toBe("0.15");
+    expect(res.body.businessName).toBe("Renamed Co.");
+  });
+
+  it("rejects an out-of-range tax rate", async () => {
+    const res = await request(app).patch("/api/account/me").send({ defaultTaxRate: 1.5 });
+    expect(res.status).toBe(400);
+  });
+
+  it("leaves fields not included in the request untouched", async () => {
+    await request(app).patch("/api/account/me").send({ invoiceNumberPrefix: "PARTIAL-" });
+    const res = await request(app).patch("/api/account/me").send({ businessName: "Still Renamed Co." });
+    expect(res.body.invoiceNumberPrefix).toBe("PARTIAL-");
+    expect(res.body.businessName).toBe("Still Renamed Co.");
+  });
+
+  // Defensive, not the actual fix for cross-file interleaving (see
+  // vitest.config.ts's fileParallelism: false) — restores the shared
+  // dev-account row's fields to what other test files' fixtures assume,
+  // in case this file ever runs in isolation or a future test elsewhere
+  // depends on the seeded defaults.
+  afterAll(async () => {
+    await prisma.account.updateMany({
+      where: { authProviderId: DEV_ACCOUNT_AUTH_ID },
+      data: { businessName: "Dev Trades Co.", defaultTaxRate: 0.2, invoiceNumberPrefix: "INV-" },
+    });
   });
 });

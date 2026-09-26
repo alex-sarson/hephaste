@@ -1,4 +1,4 @@
-# Trade Platform — Product & Architecture Brief
+# Hephaste — Product & Architecture Brief
 
 > **Status note:** this is the original planning brief, kept as the durable
 > reference for the product's architecture and roadmap. It describes the
@@ -14,7 +14,7 @@
 
 ## Context
 
-Independent service providers who invoice clients and need to track payment status — trades people, beauticians, artists taking commissions, and similar — currently juggle separate tools, or paper/spreadsheets, with no single place to see "what's outstanding," "what's overdue," or "what needs invoicing." The goal is a single product, `trade-platform`, usable across any of these industries, where a business owner can manage their work end-to-end and generate/send/track invoices per piece of work, from either a desktop browser or their phone.
+Independent service providers who invoice clients and need to track payment status — trades people, beauticians, artists taking commissions, and similar — currently juggle separate tools, or paper/spreadsheets, with no single place to see "what's outstanding," "what's overdue," or "what needs invoicing." The goal is a single product, `hephaste`, usable across any of these industries, where a business owner can manage their work end-to-end and generate/send/track invoices per piece of work, from either a desktop browser or their phone.
 
 The product started scoped narrowly to trades people; that scope has since broadened to any invoicing/payment-tracking business, with trades, beauty & wellness, and arts/commissions as the initial example verticals it's designed around (see §3a). The underlying domain model didn't need to change for this — only the UI vocabulary a given account sees.
 
@@ -35,7 +35,7 @@ This brief lays out the monorepo structure, domain model, invoice lifecycle, and
 **pnpm + Turborepo** for workspace management and cached build/lint/test pipelines — enough orchestration for ~6 packages without Nx's overhead.
 
 ```
-trade-platform/
+hephaste/
 ├── apps/
 │   ├── api/                  # Node.js/TypeScript backend (REST)
 │   │   src/modules/{auth,accounts,customers,jobs,invoices,email,attachments,reporting,admin}/
@@ -54,7 +54,7 @@ trade-platform/
 │   ├── pdf/                  # invoice PDF rendering
 │   └── config/               # shared eslint/tsconfig
 ├── infra/
-│   ├── docker-compose.yml    # local Postgres, S3-local (MinIO), email sandbox
+│   ├── docker-compose.yml    # optional containerised Postgres + S3-local (SeaweedFS); `pnpm dev` (scripts/dev.mjs) runs both natively
 │   └── terraform/ (or platform-specific config)
 ├── .github/workflows/{ci,deploy}.yml
 ├── turbo.json / pnpm-workspace.yaml
@@ -80,7 +80,7 @@ Every tenant-owned table carries a non-nullable, indexed `account_id` — this i
 - **Invoice**: belongs to account + job (+ denormalized customer) — modeled **one-to-many Job→Invoice** (not unique) so a follow-up/supplementary invoice on the same job is possible later, even though v1 UI only creates one. `status` enum (`draft, sent, viewed, paid, void`) plus a separate `overdue: boolean` flag (see §4 for why these are split), subtotal/tax/total, `amount_paid`, `paid_method` (free text — no processor), PDF URL, timestamps for sent/first-viewed/paid/voided.
 - **InvoiceLineItem**: description, type (labour/materials/other), quantity, unit price, stored line total (not recomputed later, for historical accuracy).
 - **InvoiceStatusEvent**: append-only audit trail of every status transition (from/to, trigger source, actor, metadata) — never mutate `Invoice.status` without writing one of these in the same transaction.
-- **EmailEvent**: one row per Postmark webhook event (sent/delivered/opened/bounced), correlated via `provider_message_id`, raw payload retained for debugging.
+- **EmailEvent**: one row per email provider webhook event (sent/delivered/opened/bounced), correlated via `provider_message_id`, raw payload retained for debugging.
 - **Admin**: entirely separate identity table from `Account` (not a role flag) — see §5.
 - **AdminAuditLog**: every admin action against tenant data, logged.
 
@@ -88,7 +88,7 @@ Every tenant-owned table carries a non-nullable, indexed `account_id` — this i
 
 The domain model above is generic enough to serve any invoicing/payment-tracking business — what's industry-specific is purely the words used for it (a trades person's "Job" is a beautician's "Appointment" is an artist's "Commission"). A required, one-time onboarding questionnaire right after account creation (before the dashboard is reachable at all) captures this:
 
-- `Account.industry`: a curated preset (`TRADES`, `BEAUTY`, `ARTS`, `OTHER`) — deliberately stored as a plain validated string, not a Postgres enum, so adding a new industry later is a code-only change (one entry in `industrySchema` + `INDUSTRY_PRESETS`, both in `@trade-platform/shared-types`), never a database migration.
+- `Account.industry`: a curated preset (`TRADES`, `BEAUTY`, `ARTS`, `OTHER`) — deliberately stored as a plain validated string, not a Postgres enum, so adding a new industry later is a code-only change (one entry in `industrySchema` + `INDUSTRY_PRESETS`, both in `@hephaste/shared-types`), never a database migration.
 - Six label columns (`jobLabelSingular`/`Plural`, `customerLabelSingular`/`Plural`, `assetLabelSingular`/`Plural`) store the *resolved* terminology directly — picking a preset just prefills these before submit, and they stay freely editable afterward (initially only from the onboarding screen; a Settings UI for editing them later is not yet built). "Asset" is the neutral third noun covering a trades person's materials, a beautician's products, or an artist's supplies.
 - `Account.onboardingCompletedAt`: `null` until the questionnaire is submitted — the sole gate the web app checks to decide whether to show onboarding instead of the normal dashboard, for any route.
 
@@ -102,7 +102,7 @@ States: `draft → sent → viewed → paid`, `void` reachable from any non-paid
 |---|---|
 | → `draft` | User creates invoice from a job |
 | `draft` → `sent` | User sends; triggers PDF gen + email (line items lock) |
-| `sent` → `viewed` | Postmark `Open` webhook |
+| `sent` → `viewed` | Resend `email.opened` webhook |
 | any → `overdue=true` | Daily scheduled sweep |
 | → `paid` | Manual "Mark as Paid" |
 | non-paid → `void` | Manual cancel |
@@ -113,7 +113,9 @@ Business rules live in `packages/invoice-engine` as pure, heavily unit-tested fu
 
 Admins support the *product*, not the account holder's work: view account list/metadata (job/invoice counts, billing status) for support; **cannot** browse an account's customers/jobs/invoice content by default. A "view as account" capability exists only as an explicit, time-boxed, logged break-glass action (`AdminAuditLog`) — the standard SaaS support pattern.
 
-Architecturally: `Admin` is a fully separate auth identity from `Account` (separate Clerk app/instance or a small internal `apps/admin-web`), admin routes never set the tenant RLS session variable, and a separate `admin_service` Postgres role (`BYPASSRLS`) is used only for the logged metadata/impersonation paths — never for normal tenant traffic.
+**Built (minimal admin console, `/admin` in `apps/web`):** account list with usage counts, a per-account support summary (counts and states only — every view is written to `AdminAuditLog`), a SUPERADMIN-only audit-log viewer, and a support action to retry a failed invoice email (also audited). The database role behind it (`hephaste_admin`, `ADMIN_DATABASE_URL`) is granted only metadata columns, so tenant content is unreadable to admin code at the Postgres level. Admins sign in exactly like customers, through the one Clerk instance; the Admin section of the dashboard appears for users holding an admin permission level (`SUPPORT | BILLING_OPS | SUPERADMIN`, the audit log being SUPERADMIN-only), decided by the API from the `admins` table and enforced on every `/admin` call. Admin rows are created out-of-band with `pnpm admin:grant <email> [role]` (`--revoke` to remove). Not built yet: the break-glass "view as account" grant.
+
+Architecturally: `Admin` is a fully separate *authorization* record from `Account` — a table keyed by the Clerk user id, so a tenant bug can never flip a customer into an admin, and a valid session alone grants nothing. Admin routes never set the tenant RLS session variable, and a separate `hephaste_admin` Postgres role (`BYPASSRLS`, metadata columns only) is used only for the logged metadata/impersonation paths — never for normal tenant traffic.
 
 ## 6. Feature Scope
 
@@ -137,13 +139,13 @@ Dedicated integration tests assert cross-account access is blocked at both layer
 
 ## 8. API Design
 
-**REST**, not GraphQL — the domain is small, resource-oriented CRUD with one first-party client; GraphQL's benefits don't pay for themselves here. Zod schemas from `packages/shared-types` validate every request at the route boundary. Route groups: `/api/account`, `/api/customers`, `/api/jobs` (+ `/materials`, `/attachments`, `/status`), `/api/invoices` (+ `/send`, `/mark-paid`, `/void`, `/pdf`), `/api/webhooks/postmark`, `/api/dashboard/summary`, `/api/reports`, `/admin/*` (separate middleware, never RLS-scoped to a tenant).
+**REST**, not GraphQL — the domain is small, resource-oriented CRUD with one first-party client; GraphQL's benefits don't pay for themselves here. Zod schemas from `packages/shared-types` validate every request at the route boundary. Route groups: `/api/account`, `/api/customers`, `/api/jobs` (+ `/materials`, `/attachments`, `/status`), `/api/invoices` (+ `/send`, `/mark-paid`, `/void`, `/pdf`), `/api/webhooks/resend`, `/api/dashboard/summary`, `/api/reports`, `/admin/*` (separate middleware, never RLS-scoped to a tenant).
 
 ## 9. Email Sending & Tracking
 
-**Postmark**: transactional-first deliverability, first-class webhook support (Delivery/Open/Bounce/SpamComplaint) — exactly the primitives needed to drive `sent`/`viewed` without building custom pixel tracking, simple pay-per-email pricing for early low volume. (Resend is a reasonable close alternative if preferred; the `EmailEvent` table is provider-agnostic.)
+**Resend**: transactional-first deliverability, webhook support (sent/delivered/opened/bounced/complained via Svix-signed events) — the primitives needed to drive `sent`/`viewed` without building custom pixel tracking. Originally scoped as Postmark; switched after Postmark's signup flow rejected a public/free email domain for account creation, blocking sign-up outright before any code here was provider-committal. `EmailEvent` was already provider-agnostic (`provider_message_id`, a generic `EmailEventType` enum), so the switch only touched `apps/api/src/modules/email/webhooks.ts`, its route (`/api/webhooks/resend`), and env var names — not the domain model.
 
-Send flow: sending enqueues a background job (not synchronous in the request) that renders the PDF, uploads it, calls Postmark, and records `provider_message_id`. Inbound webhook handler is idempotent (dedupe on message id + event type + timestamp), writes `EmailEvent`, and transitions `sent → viewed` on first open. UI should label viewed status as best-effort ("Viewed (estimated)") since pixel-based open tracking is inherently imperfect.
+Send flow: sending enqueues a background job (not synchronous in the request) that renders the PDF, uploads it, calls Resend, and records `provider_message_id` (Resend's `email_id`). Inbound webhook handler verifies the Svix signature, is idempotent (dedupe on message id + event type + timestamp), writes `EmailEvent`, and transitions `sent → viewed` on first open. UI should label viewed status as best-effort ("Viewed (estimated)") since pixel-based open tracking is inherently imperfect.
 
 ## 10. Background Jobs
 
@@ -162,18 +164,19 @@ Sized small deliberately: managed Postgres with automated backups/PITR (non-nego
 ## 13. Phased Roadmap
 
 - **Phase 0 (scaffolding)** — ✅ done: monorepo skeleton, full Prisma schema up front (cheap to write once, painful to bolt on piecemeal), Clerk wired in (plus a local dev-auth bypass), CI running on the repo. The `customers` module is the fully wired reference implementation of the tenant-scoped repository pattern; `jobs` and `invoices` are stubs following the same pattern. A design system (dashboard, jobs, invoice detail, customers, style guide) has been drafted and partially implemented in `apps/web`.
-- **Phase 1 (MVP)**: build order — account setup → customers → jobs (+ materials/attachments) → invoice creation/line items/tax (engine tests first) → PDF → Postmark send + job runner → webhook ingestion → overdue sweep → dashboard → tenant-isolation tests + RLS → PWA polish → minimal admin view.
+- **Phase 1 (MVP)** — ✅ done: build order — account setup → customers → jobs (+ materials/attachments) → invoice creation/line items/tax (engine tests first) → PDF → Resend send + job runner → webhook ingestion → overdue sweep → dashboard → tenant-isolation tests + RLS → PWA polish → minimal admin view.
 - **Phase 2**: reminders, reporting, branding, notifications, CSV export, quotes.
-- **Phase 3+**: payments, multi-user accounts, offline-first, native app, credit notes/multi-currency — revisit only with real demand.
+- **Phase 3 (accounting)**: expenses (with recurring series), supplier payments and contracts, subscription tracker, wages/people-payments records, and profit & loss reporting on both paid and accrued bases with a paid-vs-projected-accrued profit graph filterable by year/quarter/month. No bank connection. Planned in detail; not started.
+- **Phase 4+**: payments, multi-user accounts, offline-first, native app, credit notes/multi-currency — revisit only with real demand.
 
 ### Critical files to create first
 - `packages/db/schema.prisma` — the domain model and RLS migration anchor point.
 - `packages/invoice-engine/src/stateMachine.ts` — transition rules + tax/total math.
 - `apps/api/src/middleware/tenantScope.ts` — the entire tenant-isolation guarantee.
-- `apps/api/src/modules/email/webhooks.ts` — Postmark inbound handler driving status.
+- `apps/api/src/modules/email/webhooks.ts` — Resend inbound handler driving status.
 - `apps/api/src/jobs-runner/index.ts` — background worker (send, overdue sweep).
 - `turbo.json` / `pnpm-workspace.yaml` — the monorepo package graph everything else depends on.
 
 ## Verification
 
-Once scaffolded: `pnpm install && docker compose up -d` (local Postgres), `pnpm --filter db prisma migrate dev`, `pnpm dev` to run API + web together, then manually walk the critical path (sign up → create customer → create job → create invoice → send → confirm Postmark sandbox delivery → simulate webhook → confirm status flips to `viewed`). CI (`turbo run lint typecheck test`) should pass, with the tenant-isolation and invoice-engine test suites treated as release-blocking from day one.
+Once scaffolded: `pnpm install && pnpm dev` (starts local Postgres and S3-compatible storage, applies migrations, and runs API + jobs-runner + web together), then manually walk the critical path (sign up → create customer → create job → create invoice → send → confirm Resend sandbox delivery → simulate webhook → confirm status flips to `viewed`). CI (`turbo run lint typecheck test`) should pass, with the tenant-isolation and invoice-engine test suites treated as release-blocking from day one.

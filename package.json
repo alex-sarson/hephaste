@@ -1,5 +1,5 @@
 {
-  "name": "trade-platform",
+  "name": "hephaste",
   "private": true,
   "version": "0.0.0",
   "license": "UNLICENSED",
@@ -10,18 +10,21 @@
   "packageManager": "pnpm@9.15.9",
   "scripts": {
     "build": "turbo run build",
-    "dev": "turbo run dev --parallel",
+    "dev": "node scripts/dev.mjs",
+    "dev:apps": "turbo run dev jobs-runner --parallel",
     "lint": "turbo run lint",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
-    "db:generate": "pnpm --filter @trade-platform/db generate",
-    "db:migrate": "pnpm --filter @trade-platform/db migrate:dev",
-    "db:studio": "pnpm --filter @trade-platform/db studio"
+    "admin:grant": "pnpm --filter @hephaste/api admin:grant",
+    "db:generate": "pnpm --filter @hephaste/db generate",
+    "db:migrate": "pnpm --filter @hephaste/db migrate:dev",
+    "db:studio": "pnpm --filter @hephaste/db studio"
   },
   "devDependencies": {
+    "embedded-postgres": "16.14.0-beta.17",
+    "prettier": "^3.4.0",
     "turbo": "^2.3.0",
-    "typescript": "^5.7.0",
-    "prettier": "^3.4.0"
+    "typescript": "^5.7.0"
   }
 }

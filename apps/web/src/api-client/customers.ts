@@ -1,4 +1,4 @@
-import type { CreateCustomerInput } from "@trade-platform/shared-types";
+import type { CreateCustomerInput } from "@hephaste/shared-types";
 import { request } from "./client.js";
 
 export interface Customer {

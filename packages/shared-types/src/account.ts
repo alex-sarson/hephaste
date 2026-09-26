@@ -57,3 +57,29 @@ export const onboardingRequestSchema = terminologySchema.extend({
   industry: industrySchema,
 });
 export type OnboardingRequestInput = z.infer<typeof onboardingRequestSchema>;
+
+// Company profile / invoicing defaults, editable from Settings (brief §6's
+// "account/company profile setup" — the first MVP feature, previously a
+// TODO on PATCH /me). All optional: this is a partial update of an
+// existing Account row, not a creation payload. Logo upload is excluded —
+// unlike every other field here it needs a file-storage decision (same
+// shape as the one already deferred for the invoices/email checkpoint),
+// not just a text input.
+export const updateAccountProfileSchema = z.object({
+  businessName: z.string().min(1).optional(),
+  contactEmail: z.string().email().optional(),
+  contactPhone: z.string().optional(),
+  addressLine1: z.string().optional(),
+  addressLine2: z.string().optional(),
+  city: z.string().optional(),
+  postcode: z.string().optional(),
+  country: z.string().optional(),
+  vatNumber: z.string().optional(),
+  defaultTaxRate: z.coerce.number().min(0).max(1).optional(),
+  invoiceNumberPrefix: z.string().min(1).max(20).optional(),
+  currency: z.string().min(1).max(10).optional(),
+  bankAccountName: z.string().optional(),
+  bankSortCode: z.string().optional(),
+  bankAccountNumber: z.string().optional(),
+});
+export type UpdateAccountProfileInput = z.infer<typeof updateAccountProfileSchema>;

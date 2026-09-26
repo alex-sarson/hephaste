@@ -1,9 +1,9 @@
 // Status is always a dot + label pill (never a left-border stripe) — see
 // design/Styleguide.dc.html. Typed against the same enums the API and DB
-// use (@trade-platform/shared-types) so the UI can never drift into a
+// use (@hephaste/shared-types) so the UI can never drift into a
 // status the backend doesn't have.
 import type { CSSProperties } from "react";
-import type { InvoiceStatus, JobStatus } from "@trade-platform/shared-types";
+import type { InvoiceStatus, JobStatus } from "@hephaste/shared-types";
 
 interface PillSpec {
   label: string;

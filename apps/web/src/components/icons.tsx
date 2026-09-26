@@ -1,6 +1,6 @@
 // Hand-drawn inline SVG icons, mirrored 1:1 from design/*.dc.html — never
-// emoji, per the design system (see the published "Trade Platform Design
-// System" artifact). Every icon is stroke-based, currentColor, so it
+// emoji, per the design system (see the published "Hephaste Design System"
+// artifact). Every icon is stroke-based, currentColor, so it
 // recolors with the surrounding text color automatically.
 import type { SVGProps } from "react";
 
@@ -149,6 +149,20 @@ export function DownloadIcon(props: IconProps) {
   );
 }
 
+export function FileIcon(props: IconProps) {
+  return (
+    <svg width="16" height="16" viewBox="0 0 20 20" fill="none" {...props}>
+      <path
+        d="M5 2.5H11.5L15 6V17.5H5V2.5Z"
+        stroke="currentColor"
+        strokeWidth="1.6"
+        strokeLinejoin="round"
+      />
+      <path d="M11.5 2.5V6H15" stroke="currentColor" strokeWidth="1.6" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
 export function SendIcon(props: IconProps) {
   return (
     <svg width="14" height="14" viewBox="0 0 20 20" fill="none" {...props}>
@@ -158,10 +172,41 @@ export function SendIcon(props: IconProps) {
   );
 }
 
+// Twin bolts (same orientation, not mirrored) leaning forward, joined by a
+// bar that comes out of the right bolt without reaching the left one.
 export function BrandMark(props: IconProps) {
   return (
-    <svg width="17" height="17" viewBox="0 0 20 20" fill="none" {...props}>
-      <path d="M5 15L15 5M9 5H15V11" stroke="var(--on-accent)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" {...props}>
+      <g transform="skewX(-12)">
+        <path
+          transform="translate(4.75,2.667) scale(0.1875,0.6111)"
+          d="M13 10V3L4 14h7v7l9-11h-7z"
+          fill="var(--on-accent)"
+        />
+        <path
+          transform="translate(12.75,2.667) scale(0.1875,0.6111)"
+          d="M13 10V3L4 14h7v7l9-11h-7z"
+          fill="var(--on-accent)"
+        />
+      </g>
+      <rect x="8.5" y="9.25" width="3" height="1.5" rx="0.5" fill="var(--on-accent)" />
+    </svg>
+  );
+}
+
+// Mobile-only nav drawer toggle — see AppShell's app-topbar.
+export function MenuIcon(props: IconProps) {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" {...props}>
+      <path d="M3 5.5H17M3 10H17M3 14.5H17" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+export function CloseIcon(props: IconProps) {
+  return (
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" {...props}>
+      <path d="M5 5L15 15M15 5L5 15" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
     </svg>
   );
 }

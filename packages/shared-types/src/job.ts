@@ -1,10 +1,11 @@
 import { z } from "zod";
-import { jobStatusSchema } from "./enums.js";
+import { jobLocationTypeSchema, jobStatusSchema } from "./enums.js";
 
 export const createJobSchema = z.object({
   customerId: z.string().uuid(),
   title: z.string().min(1),
   description: z.string().optional(),
+  locationType: jobLocationTypeSchema.optional(),
   scheduledStart: z.coerce.date().optional(),
   scheduledEnd: z.coerce.date().optional(),
   addressLine1: z.string().optional(),

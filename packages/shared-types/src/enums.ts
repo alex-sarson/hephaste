@@ -13,8 +13,24 @@ export const jobStatusSchema = z.enum([
 ]);
 export type JobStatus = z.infer<typeof jobStatusSchema>;
 
+// Where the work happens — generic across industries. Only ON_SITE makes
+// the job's address fields meaningful; see schema.prisma's Job model.
+export const jobLocationTypeSchema = z.enum(["ON_SITE", "REMOTE", "IN_HOUSE"]);
+export type JobLocationType = z.infer<typeof jobLocationTypeSchema>;
+
 export const invoiceStatusSchema = z.enum(["DRAFT", "SENT", "VIEWED", "PAID", "VOID"]);
 export type InvoiceStatus = z.infer<typeof invoiceStatusSchema>;
+
+// Distinct from InvoiceStatus: an invoice's business status flips to SENT
+// synchronously the moment "Send" is clicked (see invoices/router.ts's
+// POST /:id/send), independent of whether the actual email — rendered and
+// handed to Resend asynchronously by the jobs-runner — succeeds. This is
+// that async outcome: SENDING while the background job is still
+// PENDING/RUNNING, SENT once it's actually gone out, FAILED if Resend
+// rejected it (see BackgroundJob.lastError). Not persisted anywhere of its
+// own — always derived from the latest SEND_INVOICE_EMAIL BackgroundJob.
+export const emailSendStatusSchema = z.enum(["SENDING", "SENT", "FAILED"]);
+export type EmailSendStatus = z.infer<typeof emailSendStatusSchema>;
 
 export const lineItemTypeSchema = z.enum(["LABOUR", "MATERIALS", "OTHER"]);
 export type LineItemType = z.infer<typeof lineItemTypeSchema>;
