@@ -25,6 +25,29 @@ export const privilegedPrisma = new PrismaClient({
   datasourceUrl: process.env.DATABASE_URL,
 });
 
+let adminClient: PrismaClient | undefined;
+/**
+ * The admin console's connection — hephaste_admin (see the add_admin_role
+ * migration): BYPASSRLS so it can read across accounts, but granted only the
+ * metadata columns the admin views need, so it physically can't read tenant
+ * content. Only modules/admin/ should use it.
+ *
+ * A function rather than a constant, and throws when ADMIN_DATABASE_URL is
+ * unset: PrismaClient with no explicit URL silently falls back to
+ * DATABASE_URL (the table-owning superuser), which would turn a missing env
+ * var into an over-privileged admin connection instead of an error.
+ */
+export function adminPrisma(): PrismaClient {
+  if (!adminClient) {
+    const url = process.env.ADMIN_DATABASE_URL;
+    if (!url) {
+      throw new Error("ADMIN_DATABASE_URL is not set — see .env.example");
+    }
+    adminClient = new PrismaClient({ datasourceUrl: url });
+  }
+  return adminClient;
+}
+
 // Holds the current request's accountId for the extent of
 // withTenantScope's callback — see `prisma` below for what actually uses
 // it. Deliberately just the id, not a held-open transaction/connection:

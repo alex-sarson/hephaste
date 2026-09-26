@@ -62,3 +62,14 @@ export async function requireAdmin(req: Request, res: Response, next: NextFuncti
     res.status(401).json({ error: "Invalid or expired session", detail: (err as Error).message });
   }
 }
+
+/** Use after requireAdmin: 403 unless the admin holds one of `roles`. */
+export function requireAdminRole(...roles: NonNullable<Request["adminRole"]>[]) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.adminRole || !roles.includes(req.adminRole)) {
+      res.status(403).json({ error: "Your admin role doesn't permit this" });
+      return;
+    }
+    next();
+  };
+}

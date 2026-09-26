@@ -12,6 +12,9 @@ import { InvoiceDetailPage } from "./routes/InvoiceDetailPage.js";
 import { CustomersPage } from "./routes/CustomersPage.js";
 import { SettingsPage } from "./routes/SettingsPage.js";
 import { OnboardingPage } from "./routes/OnboardingPage.js";
+import { AdminAccountsPage } from "./routes/admin/AdminAccountsPage.js";
+import { AdminAccountPage } from "./routes/admin/AdminAccountPage.js";
+import { AdminAuditPage } from "./routes/admin/AdminAuditPage.js";
 
 function SignedOutScreen() {
   return (
@@ -77,6 +80,12 @@ export function App() {
             <Route path="/invoices/:id" element={<InvoiceDetailPage />} />
             <Route path="/customers" element={<CustomersPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            {/* Reachable only in effect for admins: the API rejects these
+                pages' calls for anyone else, and AppShell only links here
+                when GET /admin/me succeeds. */}
+            <Route path="/admin" element={<AdminAccountsPage />} />
+            <Route path="/admin/accounts/:id" element={<AdminAccountPage />} />
+            <Route path="/admin/audit" element={<AdminAuditPage />} />
           </Routes>
         </AppShell>
       )}

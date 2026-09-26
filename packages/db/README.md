@@ -54,14 +54,20 @@ What it actually does, and why it's two roles rather than one:
   and the overdue sweep, which is the same kind of cross-tenant system
   operation — runs via `lib/db.ts`'s `privilegedPrisma` instead, which
   reuses the existing owner role rather than provisioning a third one.
-  That role is still bypass-everything, so treat it the way the brief's
-  `admin_service`/`BYPASSRLS` role is treated elsewhere: never for
-  anything driven by a single request's `accountId`. A dedicated
-  `admin_service` role (brief §5) is still a follow-up for once the admin
-  module actually needs cross-account **content** access, not just the
-  `accounts` metadata listing it has today (which needs no bypass —
-  `accounts` itself carries no RLS policy at all; it's the tenant
-  boundary, not tenant content).
+  That role is still bypass-everything, so never use it for anything
+  driven by a single request's `accountId`.
+- **The admin console has its own role**, `hephaste_admin`
+  (`prisma/migrations/20260926120000_add_admin_role/`, `ADMIN_DATABASE_URL`,
+  `lib/db.ts`'s `adminPrisma()`). It has `BYPASSRLS` — it has to read
+  across accounts — but its GRANTs are column-level and metadata-only:
+  account name/email/industry, `account_id`/`status`/`deleted_at` on
+  customers and jobs, invoice number/status/overdue/sent-at, the job queue
+  and the audit log. It has **no** privilege on customer names, job titles,
+  invoice amounts, notes, attachments or bank details, so brief §5's "admins
+  can't browse tenant content" is enforced by Postgres, not only by code
+  (`modules/admin/router.test.ts` asserts the `permission denied`).
+  `BYPASSRLS` needs a superuser to grant, so a deployed environment should
+  create this role out-of-band, as with `hephaste_app`.
 
 Local sanity check that the backstop actually backstops something — connect
 directly as the app role and confirm an unscoped query sees nothing, then
