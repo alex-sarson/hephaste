@@ -2,7 +2,7 @@
 // Opening this page is recorded in the audit log by the API (so is a
 // resend), and the page says so — the "admins can't quietly browse tenant
 // data" guarantee is only credible if the people using it can see it too.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import type { InvoiceStatus, JobStatus } from "@hephaste/shared-types";
 import { useAuthToken } from "../../auth/context.js";
@@ -138,21 +138,28 @@ export function AdminAccountPage() {
   const [error, setError] = useState<string | null>(null);
   const [resending, setResending] = useState<string | null>(null);
 
+  // Fetching this summary is an audited action (the API writes one
+  // "viewed" row per request), so it must happen exactly once per visit.
+  // An effect alone can't promise that: React StrictMode runs every effect
+  // twice in development, and a changed `getToken` identity would re-run it
+  // too — each run being a second audit row for one look at the page. The
+  // ref remembers which account has already been requested; results are
+  // applied regardless of effect cleanup, since the one request that does go
+  // out belongs to this page for as long as it shows this account.
+  const requestedFor = useRef<string | null>(null);
   useEffect(() => {
-    let cancelled = false;
+    if (requestedFor.current === id) return;
+    requestedFor.current = id!;
     (async () => {
       try {
         const token = await getToken();
         if (!token) throw new Error("Not signed in");
         const result = await getAdminAccountSummary(token, id!);
-        if (!cancelled) setSummary(result);
+        if (requestedFor.current === id) setSummary(result);
       } catch (err) {
-        if (!cancelled) setError((err as Error).message);
+        if (requestedFor.current === id) setError((err as Error).message);
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [getToken, id]);
 
   const resend = useCallback(
